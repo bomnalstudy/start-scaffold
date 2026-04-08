@@ -1,0 +1,47 @@
+{
+  "project": {
+    "name": "start-scaffold",
+    "summary": "Fill this with a one-line product summary."
+  },
+  "servers": [
+    {
+      "name": "api-server",
+      "when_to_use": "Use for API and data logic tasks.",
+      "start_command": "npm run dev:api",
+      "healthcheck": "GET /health",
+      "notes": "Replace with your real server details."
+    },
+    {
+      "name": "web-server",
+      "when_to_use": "Use for UI and interaction tasks.",
+      "start_command": "npm run dev:web",
+      "healthcheck": "Open home route in browser",
+      "notes": "Replace with your real server details."
+    }
+  ],
+  "data_routes": [
+    {
+      "concern": "Read current user profile",
+      "root_file": "src/data/index.ts",
+      "entry_points": [
+        "src/features/profile/useProfile.ts"
+      ],
+      "notes": "Replace with your real data path."
+    }
+  ],
+  "critical_files": [
+    {
+      "path": "AGENTS.md",
+      "role": "global operation rules"
+    },
+    {
+      "path": "docs/token-ops-standard.md",
+      "role": "token discipline standard"
+    }
+  ],
+  "session_defaults": {
+    "preferred_agent": "codex",
+    "default_context_pack": "implement",
+    "must_confirm_before_expand_scope": true
+  }
+}

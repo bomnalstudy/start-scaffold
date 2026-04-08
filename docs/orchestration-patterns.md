@@ -206,6 +206,21 @@ Notes:
 4. 반복 작업 스크립트화
 5. 필요 시 역할 분리 자동화
 
+## 하드닝 원칙 (Research-backed)
+
+근거:
+
+- Test Pyramid: https://martinfowler.com/articles/practical-test-pyramid.html
+- Airflow Task DAG discipline: https://airflow.apache.org/docs/apache-airflow/2.10.5/core-concepts/tasks.html
+- OpenAI eval practices: https://platform.openai.com/docs/guides/evaluation-best-practices
+
+적용:
+
+- 단계 의존성(선행/후행)을 명시한다.
+- 각 단계의 실패/재시도/중단 조건을 명시한다.
+- 고비용 단계(예: E2E)는 최소화하고 저비용 검사를 먼저 수행한다.
+- 종료 시 다음 세션 재현을 위한 로그를 남긴다.
+
 ## 현재 스캐폴드 기본 오케스트레이터
 
 이 스캐폴드는 현재 아래 파이프라인을 기본 제공합니다.
@@ -230,6 +245,38 @@ Notes:
 - `.graveyard/` 참조 감지
 - 과도한 `utils/index` barrel 경고
 - `.module.css`가 아닌 일반 CSS 경고
+
+### `token-ops`
+
+목적:
+
+- 작업 계획이 토큰 절약형 최소 실행 기준을 만족하는지 확인
+
+실행:
+
+```powershell
+.\scripts\run-orchestration.ps1 -Pipeline token-ops -PlanPath templates/orchestration-plan.md
+```
+
+현재 포함 검사:
+
+- `Original Goal` 섹션 존재/내용
+- `MVP Scope` 섹션 존재/내용
+- `Non-Goal` 섹션 존재/내용
+- `Done When` 섹션 존재/내용
+- `Stop If` 섹션 존재/내용
+
+### `all`
+
+목적:
+
+- token-ops + code-rules를 한 번에 검증
+
+실행:
+
+```powershell
+.\scripts\run-orchestration.ps1 -Pipeline all -PlanPath templates/orchestration-plan.md
+```
 
 향후 추가 우선순위:
 

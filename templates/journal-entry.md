@@ -4,11 +4,15 @@
 
 YYYY-MM-DD
 
-## Goal
+## Original Goal
 
 -
 
-## Changes
+## MVP Scope (This Session)
+
+-
+
+## Key Changes
 
 -
 
@@ -16,10 +20,21 @@ YYYY-MM-DD
 
 -
 
-## Risks / Follow-up
+## Mistakes / Drift Signals Observed
 
 -
 
-## Next Action
+## Prevention for Next Session
 
 -
+
+## Direction Check
+
+- Why this still matches the original goal:
+-
+
+## Next Tasks
+
+1. 
+2. 
+3. 

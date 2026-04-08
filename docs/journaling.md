@@ -18,11 +18,26 @@
 ## 최소 템플릿
 
 - 날짜/세션
-- 목표
-- 변경 내용
+- Original Goal
+- MVP Scope(이번 세션)
+- Key Changes(핵심 변화)
 - 검증 결과
-- 남은 이슈
-- 다음 액션
+- Mistakes / Drift Signals
+- Prevention for Next Session
+- Direction Check
+- Next Tasks(앞으로의 과제)
+
+핵심:
+
+- "무엇을 바꿨는지"보다 "왜 바꿨는지"를 남깁니다.
+- 다음 세션이 같은 실수를 반복하지 않도록 `Prevention`을 씁니다.
+- 다음 실행 항목은 `Next Tasks`로 명시합니다.
+
+자동 검사:
+
+```powershell
+.\scripts\run-orchestration.ps1 -Pipeline worklog -WorklogPath <worklog-file>
+```
 
 ## 파일 운영 추천
 

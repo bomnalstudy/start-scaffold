@@ -143,6 +143,19 @@ PowerShell, Node, Python 등으로 반복 검증 스크립트를 만듭니다.
 - 재현 경로를 남깁니다.
 - 새로운 버그를 잡았으면 시나리오를 추가합니다.
 
+Research-backed 참고:
+
+- Playwright isolation and user-visible behavior:
+  https://playwright.dev/docs/best-practices
+- pytest fixture modular setup:
+  https://docs.pytest.org/en/stable/how-to/fixtures.html
+
+추가 적용:
+
+- 시나리오 간 상태 공유를 기본 금지합니다.
+- 외부 의존성은 가능한 한 제어된 응답으로 고정합니다.
+- 사전조건(데이터/세션/설정)을 명시적으로 선언합니다.
+
 ## 권장 질문
 
 하네스를 만들기 전 아래를 먼저 정리합니다.

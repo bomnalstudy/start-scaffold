@@ -1,7 +1,8 @@
 {
   "base": [
     "AGENTS.md",
-    "docs/token-ops-standard.md"
+    "docs/token-ops-standard.md",
+    "docs/project-context.compact.md"
   ],
   "agent_adapters": {
     "codex": [
