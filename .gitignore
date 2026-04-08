@@ -1,0 +1,15 @@
+.local/
+handoff/
+.graveyard/
+.env
+.env.local
+.env.*.local
+*.secret
+*.secrets.json
+*.enc.json
+*.log
+node_modules/
+dist/
+build/
+.DS_Store
+Thumbs.db

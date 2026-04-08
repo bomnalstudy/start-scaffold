@@ -1,0 +1,52 @@
+{
+  "base": [
+    "AGENTS.md",
+    "docs/token-ops-standard.md"
+  ],
+  "agent_adapters": {
+    "codex": [
+      "CODEX.md"
+    ],
+    "claude": [
+      "CLAUDE.md"
+    ]
+  },
+  "packs": {
+    "start": [
+      "docs/project-start-brief.md",
+      "templates/orchestration-plan.md",
+      "docs/vibe-coding-failure-prevention.md"
+    ],
+    "implement": [
+      "docs/ai-usage-guide.md",
+      "docs/coding-rules.md",
+      "docs/workflow.md"
+    ],
+    "bugfix": [
+      "docs/ai-usage-guide.md",
+      "docs/project-guardrails.md",
+      "docs/workflow.md"
+    ],
+    "review": [
+      "docs/project-guardrails.md",
+      "docs/coding-rules.md",
+      "docs/token-efficiency.md"
+    ],
+    "orchestration": [
+      "docs/orchestration-patterns.md",
+      "docs/harness-guide.md",
+      "templates/harness-spec.md"
+    ],
+    "secrets": [
+      "docs/multi-machine-secrets.md",
+      "scripts/load-project-secrets.ps1",
+      "scripts/export-project-secrets.ps1",
+      "scripts/import-project-secrets.ps1"
+    ],
+    "token-audit": [
+      "docs/token-ops-standard.md",
+      "docs/token-efficiency.md",
+      "docs/token-ops-research.md"
+    ]
+  }
+}
