@@ -18,7 +18,8 @@
     "start": [
       "docs/project-start-brief.md",
       "templates/orchestration-plan.md",
-      "docs/vibe-coding-failure-prevention.md"
+      "docs/vibe-coding-failure-prevention.md",
+      "docs/agent-skills.md"
     ],
     "implement": [
       "docs/ai-usage-guide.md",

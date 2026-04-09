@@ -15,6 +15,12 @@ Before loading docs, select one context pack:
 .\scripts\select-context-pack.ps1 -Agent claude -Pack bugfix
 ```
 
+Claude skill wrapper (recommended):
+
+```powershell
+.\scripts\skill-claude.ps1 -Stage start -TaskName "my task" -Pack start
+```
+
 ## Claude Execution Profile
 
 - Start with a constrained MVP scope.

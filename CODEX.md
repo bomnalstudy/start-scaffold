@@ -15,6 +15,12 @@ Before loading docs, select one context pack:
 .\scripts\select-context-pack.ps1 -Agent codex -Pack implement
 ```
 
+Codex skill wrapper (recommended):
+
+```powershell
+.\scripts\skill-codex.ps1 -Stage start -TaskName "my task" -Pack start
+```
+
 ## Codex Execution Profile
 
 - Start from a minimal MVP scope and close it fast.
