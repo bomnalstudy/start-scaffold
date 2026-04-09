@@ -7,7 +7,8 @@ Claude must follow these documents in order:
 1. `AGENTS.md`
 2. `docs/token-ops-standard.md`
 3. `docs/project-start-brief.md`
-4. task-specific docs as needed
+4. `docs/ui-ux-product-rules.md` for frontend UI/UX tasks
+5. task-specific docs as needed
 
 Before loading docs, select one context pack:
 
@@ -27,6 +28,7 @@ Claude skill wrapper (recommended):
 - Keep each run single-purpose and short.
 - Avoid broad context loading unless blocked.
 - Stop when `Done When` is reached and explain why stopping is correct.
+- For frontend UI/UX tasks, always classify the target as web, app, or shared first, then follow the matching quality guard rules.
 
 ## Claude Output Rules
 

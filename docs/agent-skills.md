@@ -61,3 +61,10 @@ If you only want a reusable prompt block without running checks:
 - Always run `start`
 - Run `checkpoint` only at major checkpoints (speed-first mode)
 - Always run `close` before ending session
+
+## UI UX Rule
+
+- For frontend UI/UX work, agents must also follow `docs/ui-ux-product-rules.md`.
+- Use `web-ui-quality-guard` for browser-first UI.
+- Use `app-ui-quality-guard` for app-first UI.
+- Use `frontend-quality-guard` only to route when the surface is still unclear.

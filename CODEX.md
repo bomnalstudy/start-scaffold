@@ -7,7 +7,8 @@ Codex must follow these documents in order:
 1. `AGENTS.md`
 2. `docs/token-ops-standard.md`
 3. `docs/project-start-brief.md`
-4. task-specific docs as needed
+4. `docs/ui-ux-product-rules.md` for frontend UI/UX tasks
+5. task-specific docs as needed
 
 Before loading docs, select one context pack:
 
@@ -27,6 +28,7 @@ Codex skill wrapper (recommended):
 - Keep context narrow: only open files relevant to the current task.
 - Prefer short iteration loops: plan -> edit -> verify -> stop.
 - Do not optimize beyond the current `Done When` unless explicitly asked.
+- For frontend UI/UX tasks, always classify the target as web, app, or shared first, then follow the matching quality guard rules.
 
 ## Codex Output Rules
 

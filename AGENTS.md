@@ -47,6 +47,14 @@
 - 각 컴포넌트/화면 폴더에 별도 CSS 파일을 둔다.
 - 가능하면 CSS Modules를 우선 사용한다.
 
+## 4.2 UI UX 작업 규칙
+
+- 사용자 대면 UI 작업이면 `docs/ui-ux-product-rules.md`를 반드시 먼저 따른다.
+- 작업 대상이 웹이면 `web-ui-quality-guard`, 앱이면 `app-ui-quality-guard` 기준을 적용한다.
+- 웹/앱이 아직 불명확하면 `frontend-quality-guard`로 surface를 먼저 정한 뒤 진행한다.
+- UI 작업에서도 기능 추가보다 정보 위계, 가독성, 대비, 반응형/안전영역, 조작 용이성을 우선한다.
+- 이모지는 제품 UI에 기본값으로 넣지 않는다.
+
 ## 5. 보관 폴더 규칙
 
 - 더 이상 쓰지 않거나 수명이 끝난 파일은 바로 삭제하지 말고 `.graveyard/` 아래로 이동한다.
