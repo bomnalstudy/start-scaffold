@@ -2,7 +2,9 @@
   "base": [
     "AGENTS.md",
     "docs/token-ops-standard.md",
-    "docs/project-context.compact.md"
+    "docs/mvp-focus.md",
+    "docs/project-context.compact.md",
+    "docs/session-guard.md"
   ],
   "agent_adapters": {
     "codex": [

@@ -6,6 +6,7 @@ If a task conflicts with this document, we pause and re-scope before continuing.
 
 ## 1. Objective
 
+- Primary: increase delivery speed and save time.
 - Minimize token spend while preserving task correctness.
 - Keep context stable, short, and reusable across turns.
 - Finish small MVP tasks quickly instead of running long, drifting sessions.
@@ -82,3 +83,21 @@ Before closing a run, all must be true:
 - `Done When` is satisfied.
 - output includes "why we should stop now".
 - unfinished items are deferred to next iteration.
+
+## 9. Orchestrator Gates (MVP Mode)
+
+Use these gates to keep chat sessions aligned:
+
+1. Start gate (before coding):
+   - `.\scripts\run-orchestration.ps1 -Pipeline session-guard -PlanPath <task-plan>`
+2. Build gate (optional in MVP mode):
+   - `.\scripts\run-orchestration.ps1 -Pipeline all -PlanPath <task-plan> -WorklogPath <worklog>`
+3. Close gate (before ending session):
+   - `.\scripts\run-session-guard-checks.ps1 -PlanPath <task-plan> -WorklogPath <worklog> -Mode close`
+
+If any gate fails, pause and re-scope before continuing.
+
+Default recommendation in MVP mode:
+
+- Always run Start + Close gates.
+- Run Build gate only at major checkpoints (not every turn).

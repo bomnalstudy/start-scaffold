@@ -16,6 +16,11 @@
 
 - 
 
+## Priority
+
+- Primary KPI (must): Time saved
+- Secondary KPI (optional): Quality that reduces rework
+
 ## MVP Scope
 
 - 
@@ -77,6 +82,10 @@
 - 
 
 ## Verification
+
+- 
+
+## Why Stop Now
 
 - 
 

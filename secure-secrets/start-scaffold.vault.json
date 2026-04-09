@@ -1,0 +1,26 @@
+﻿{
+    "format":  2,
+    "createdAt":  "2026-04-09T12:50:28.4380842+09:00",
+    "profile":  "start-scaffold",
+    "encryption":  {
+                       "name":  "powershell-securestring-aes-cbc-256"
+                   },
+    "kdf":  {
+                "name":  "pbkdf2-sha256",
+                "iterations":  210000,
+                "salt":  "6BA3NpFim0Gb/pXUGXtKTA=="
+            },
+    "auth":  {
+                 "name":  "hmac-sha256",
+                 "tag":  "foRwLUMataUE6QkyXkk0O5FBLz19jzkXwVI3UCfXahE="
+             },
+    "secrets":  {
+                    "PROJECT_ENV":  "76492d1116743f0423413b16050a5345MgB8AEEAQgBZAEEAWgBpADQAZAB0ACsASwBqAEoASwBLAFAAeQBJAEMARwBlAGcAPQA9AHwAYwBjADIAMABhAGIANwA5ADQAYwBhAGMAZAA1ADYAMQA5ADEAZQBiADQAZAA0ADIAZQBjADAAYgAxADcAZQAyAA==",
+                    "OPENAI_API_KEY":  "__EMPTY_STRING__",
+                    "LINEAR_API_KEY":  "__EMPTY_STRING__",
+                    "ANTHROPIC_API_KEY":  "__EMPTY_STRING__",
+                    "GITHUB_TOKEN":  "__EMPTY_STRING__",
+                    "NOTION_API_KEY":  "__EMPTY_STRING__",
+                    "PROJECT_NAME":  "76492d1116743f0423413b16050a5345MgB8AFEAeQBGAEgAQQBNAHQAVABzACsAYQBVAFIAaQAwAEMARwBYADMAUQBlAGcAPQA9AHwANgAxAGYAZgA1ADkAMQA4ADQAMwBlAGIAZgBlADEANQAyAGQAZAA1ADYAYgBiADEAOQA1ADQANwAxADgAZABkADYAZgBmADQAMQAwAGUAOABiADEANQAwAGQAZQAxADMAMQA5ADUAMABjADEAYgA3AGUAZABlADYAZQBkAGEAYwA="
+                }
+}

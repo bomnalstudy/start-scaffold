@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet("code-rules", "token-ops", "worklog", "all")]
+    [ValidateSet("session-guard", "code-rules", "token-ops", "worklog", "all")]
     [string]$Pipeline = "all",
 
     [string]$Root = (Split-Path -Parent $PSScriptRoot),
@@ -39,6 +39,52 @@ function Invoke-Checker {
 }
 
 switch ($Pipeline) {
+    "session-guard" {
+        Invoke-Stage -Name "Intake" -Action {
+            Write-Host "Pipeline: session-guard"
+            Write-Host "Root: $Root"
+            Write-Host "PlanPath: $PlanPath"
+            if ($WorklogPath) {
+                Write-Host "WorklogPath: $WorklogPath"
+            }
+            Write-Host "Goal: prevent drift by enforcing goal/mvp/stop conditions and direction checks"
+        }
+
+        Invoke-Stage -Name "Plan" -Action {
+            Write-Host "Checks:"
+            Write-Host "- required plan sections are filled"
+            Write-Host "- MVP scope is minimal"
+            Write-Host "- stop conditions are explicit"
+            if ($WorklogPath) {
+                Write-Host "- drift signals and prevention are logged"
+            }
+        }
+
+        Invoke-Stage -Name "Verify" -Action {
+            $checkerArgs = @{
+                Root = $Root
+                PlanPath = $PlanPath
+                Mode = if ($WorklogPath) { "checkpoint" } else { "preflight" }
+            }
+
+            if ($WorklogPath) {
+                $checkerArgs.WorklogPath = $WorklogPath
+            }
+
+            if ($EmitJson) {
+                $checkerArgs.EmitJson = $true
+            }
+
+            Invoke-Checker -CheckerFile "run-session-guard-checks.ps1" -CheckerName "session-guard" -CheckerArgs $checkerArgs
+        }
+
+        Invoke-Stage -Name "Handoff" -Action {
+            Write-Host "Next:"
+            Write-Host "- continue only if original goal and MVP are still aligned"
+            Write-Host "- stop and rescope when stop conditions are hit"
+            Write-Host "- keep next tasks scoped to the same goal"
+        }
+    }
     "code-rules" {
         Invoke-Stage -Name "Intake" -Action {
             Write-Host "Pipeline: code-rules"
@@ -119,11 +165,30 @@ switch ($Pipeline) {
 
         Invoke-Stage -Name "Plan" -Action {
             Write-Host "Checks:"
+            Write-Host "- session guard (goal/mvp/stop)"
             Write-Host "- token-ops required fields"
             Write-Host "- code-rules baseline checks"
             if ($WorklogPath) {
                 Write-Host "- worklog completion checks"
             }
+        }
+
+        Invoke-Stage -Name "Verify Session Guard" -Action {
+            $sessionArgs = @{
+                Root = $Root
+                PlanPath = $PlanPath
+                Mode = if ($WorklogPath) { "checkpoint" } else { "preflight" }
+            }
+
+            if ($WorklogPath) {
+                $sessionArgs.WorklogPath = $WorklogPath
+            }
+
+            if ($EmitJson) {
+                $sessionArgs.EmitJson = $true
+            }
+
+            Invoke-Checker -CheckerFile "run-session-guard-checks.ps1" -CheckerName "session-guard" -CheckerArgs $sessionArgs
         }
 
         Invoke-Stage -Name "Verify Token Ops" -Action {

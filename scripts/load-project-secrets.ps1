@@ -1,10 +1,31 @@
 [CmdletBinding()]
 param(
-    [string]$Path = (Join-Path (Split-Path -Parent $PSScriptRoot) ".local\project.secrets.env")
+    [string]$Profile = "",
+    [string]$Path = ""
 )
 
-if (-not (Test-Path $Path)) {
-    throw "Secrets file not found: $Path"
+function Get-DefaultProfile {
+    $name = [Environment]::GetEnvironmentVariable("PROJECT_NAME", "Process")
+    if ([string]::IsNullOrWhiteSpace($name)) {
+        $name = [System.IO.Path]::GetFileName((Split-Path -Parent $PSScriptRoot))
+    }
+    if ([string]::IsNullOrWhiteSpace($name)) {
+        return "default"
+    }
+    return $name.ToLowerInvariant()
+}
+
+$root = Split-Path -Parent $PSScriptRoot
+if ([string]::IsNullOrWhiteSpace($Profile)) {
+    $Profile = Get-DefaultProfile
+}
+
+if ([string]::IsNullOrWhiteSpace($Path)) {
+    $Path = Join-Path $root ".local\secrets\$Profile.env"
+}
+
+if (-not (Test-Path -LiteralPath $Path)) {
+    throw "Secrets file not found: $Path (profile: $Profile)"
 }
 
 $loadedKeys = New-Object System.Collections.Generic.List[string]
@@ -32,3 +53,4 @@ Write-Host "Loaded $($loadedKeys.Count) variables into the current PowerShell se
 if ($loadedKeys.Count -gt 0) {
     Write-Host ($loadedKeys -join ", ")
 }
+Write-Host "Profile: $Profile"

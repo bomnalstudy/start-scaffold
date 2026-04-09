@@ -59,6 +59,17 @@ $contextPicker = Join-Path $PSScriptRoot "select-context-pack.ps1"
 & $contextPicker -Agent $Agent -Pack $Pack
 
 Write-Host ""
+Write-Host "Running session-guard preflight for the task plan..."
+$sessionGuardChecker = Join-Path $PSScriptRoot "run-session-guard-checks.ps1"
+& $sessionGuardChecker -Root $root -PlanPath $taskFile -Mode preflight
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ""
+    Write-Host "Task created, but session-guard requirements are incomplete. Fill required sections and rerun checks."
+    exit $LASTEXITCODE
+}
+
+Write-Host ""
 Write-Host "Running token-ops check for the task plan..."
 $tokenOpsChecker = Join-Path $PSScriptRoot "run-token-ops-checks.ps1"
 & $tokenOpsChecker -Root $root -PlanPath $taskFile
