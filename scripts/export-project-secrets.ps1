@@ -9,6 +9,17 @@ param(
 $ErrorActionPreference = "Stop"
 $emptyMarker = "__EMPTY_STRING__"
 
+function Get-PlainTextFromSecureString {
+    param([Security.SecureString]$SecureValue)
+
+    $valuePtr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureValue)
+    try {
+        return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($valuePtr)
+    } finally {
+        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($valuePtr)
+    }
+}
+
 function Get-DerivedKeys {
     param(
         [string]$Passphrase,
@@ -122,12 +133,13 @@ if ([string]::IsNullOrWhiteSpace($Passphrase)) {
 }
 if ([string]::IsNullOrWhiteSpace($Passphrase)) {
     $securePassphrase = Read-Host "Enter export passphrase" -AsSecureString
-    $passphrasePtr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassphrase)
+    $securePassphraseConfirm = Read-Host "Confirm export passphrase" -AsSecureString
 
-    try {
-        $Passphrase = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($passphrasePtr)
-    } finally {
-        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($passphrasePtr)
+    $Passphrase = Get-PlainTextFromSecureString -SecureValue $securePassphrase
+    $confirmedPassphrase = Get-PlainTextFromSecureString -SecureValue $securePassphraseConfirm
+
+    if ($Passphrase -ne $confirmedPassphrase) {
+        throw "Passphrase confirmation did not match."
     }
 }
 
@@ -190,3 +202,4 @@ $bundle | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $Output -Encoding U
 Write-Host "Encrypted project secrets written to: $Output"
 Write-Host "Profile: $Profile"
 Write-Host "Share the passphrase separately from the encrypted bundle."
+Write-Host "If you forget the passphrase, the current vault cannot be recovered. Create a new vault with a new passphrase on the next export."

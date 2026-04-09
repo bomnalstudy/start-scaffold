@@ -189,7 +189,7 @@ if ($format -eq 1) {
     $expectedTagBytes = [Convert]::FromBase64String([string]$bundle.auth.tag)
     $actualTagBytes = [Convert]::FromBase64String($computedTag)
     if (-not (Test-FixedTimeEquals -A $expectedTagBytes -B $actualTagBytes)) {
-        throw "Bundle integrity verification failed. Wrong passphrase or modified file."
+        throw "Bundle integrity verification failed. Wrong passphrase or modified file. If the passphrase is forgotten, discard this vault and create a new one on the next export."
     }
 
     $keyBytes = $derived.EncryptionKey

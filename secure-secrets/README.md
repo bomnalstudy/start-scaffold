@@ -24,5 +24,7 @@ Security notes (format 2):
 - passphrase key is derived with `PBKDF2-SHA256` + random salt
 - encrypted bundle includes `HMAC-SHA256` integrity tag
 - modified/tampered bundles fail on import
+- interactive export asks for passphrase confirmation
+- forgotten passphrases are treated as non-recoverable; create a new vault with a new passphrase on the next export
 
 Never commit `.local/secrets/*.env`.
