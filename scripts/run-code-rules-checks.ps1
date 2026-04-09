@@ -47,6 +47,9 @@ function New-Finding {
 
 $rootPath = (Resolve-Path -LiteralPath $Root).Path
 $findings = @()
+$temporaryFileAllowlist = @(
+    "scripts\debug-orchestrator.ps1"
+)
 
 $excludedDirectories = @(".graveyard", ".local", "handoff", "node_modules", "dist", "build")
 
@@ -67,11 +70,40 @@ foreach ($file in $files) {
     $content = Get-Content -LiteralPath $file.FullName -Raw
     $normalizedExtension = $file.Extension.ToLowerInvariant()
     $lineCount = (Get-Content -LiteralPath $file.FullName).Count
+    $normalizedRelativePath = $relativePath.Replace('/', '\')
 
     if ($lineCount -gt $MaxLines) {
         $findings += (New-Finding -Rule "max-lines" -Severity "error" -Path $relativePath -Message "File has $lineCount lines. Limit is $MaxLines.")
     } elseif ($lineCount -gt 300) {
         $findings += (New-Finding -Rule "line-budget-warning" -Severity "warn" -Path $relativePath -Message "File has $lineCount lines. Consider splitting before it reaches $MaxLines.")
+    }
+
+    $looksTemporary = (
+        $normalizedRelativePath -match '(^|\\)(tmp|temp|scratch|playground|debug)(\\|$)' -or
+        $normalizedRelativePath -match '(^|\\)(tmp-|temp-|scratch-|playground-|debug-)' -or
+        $normalizedRelativePath -match '\.(tmp|bak|orig|rej)$'
+    )
+    if ($looksTemporary -and $normalizedRelativePath -notin $temporaryFileAllowlist) {
+        $findings += (New-Finding -Rule "temporary-file" -Severity "warn" -Path $relativePath -Message "Suspicious temporary/debug file name detected. Clean it up or archive it before closing the task.")
+    }
+
+    if (($normalizedRelativePath -like "worklogs\*.md" -or $normalizedRelativePath -like "worklogs\tasks\*.md")) {
+        $placeholderSignals = 0
+        foreach ($signal in @(
+            "## Date`r`n`r`nYYYY-MM-DD",
+            "## Original Goal`r`n`r`n-",
+            "## Project / Task`r`n`r`n-",
+            "## MVP Scope`r`n`r`n-",
+            "## Done When`r`n`r`n-"
+        )) {
+            if ($content.Contains($signal)) {
+                $placeholderSignals++
+            }
+        }
+
+        if ($placeholderSignals -ge 3) {
+            $findings += (New-Finding -Rule "placeholder-worklog" -Severity "error" -Path $relativePath -Message "Worklog/task file still looks like an untouched template. Fill it in or remove it.")
+        }
     }
 
     if ($normalizedExtension -in @(".jsx", ".tsx", ".js", ".ts")) {

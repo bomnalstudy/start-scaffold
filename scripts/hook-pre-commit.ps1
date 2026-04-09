@@ -10,6 +10,43 @@ function Fail {
     exit 1
 }
 
+function Test-PlaceholderWorklog {
+    param(
+        [string]$RepoRelativePath,
+        [string]$AbsolutePath
+    )
+
+    if ($RepoRelativePath -notlike "worklogs/*.md" -and $RepoRelativePath -notlike "worklogs/tasks/*.md") {
+        return $false
+    }
+
+    if (-not (Test-Path -LiteralPath $AbsolutePath)) {
+        return $false
+    }
+
+    $content = Get-Content -LiteralPath $AbsolutePath -Raw
+    if ([string]::IsNullOrWhiteSpace($content)) {
+        return $true
+    }
+
+    $placeholderSignals = @(
+        "## Date`r`n`r`nYYYY-MM-DD",
+        "## Original Goal`r`n`r`n-",
+        "## Project / Task`r`n`r`n-",
+        "## MVP Scope`r`n`r`n-",
+        "## Done When`r`n`r`n-"
+    )
+
+    $matchedSignals = 0
+    foreach ($signal in $placeholderSignals) {
+        if ($content.Contains($signal)) {
+            $matchedSignals++
+        }
+    }
+
+    return ($matchedSignals -ge 3)
+}
+
 $stagedFiles = git diff --cached --name-only --diff-filter=ACM
 if ($LASTEXITCODE -ne 0) {
     Fail "Failed to read staged files."
@@ -20,10 +57,31 @@ if (-not $stagedFiles) {
 }
 
 $blockedPaths = @()
+$cleanupPaths = @()
 $scanTargets = New-Object System.Collections.Generic.List[string]
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$cleanupAllowlist = @(
+    "scripts/debug-orchestrator.ps1"
+)
 
 foreach ($f in $stagedFiles) {
     $n = $f.Replace('\', '/')
+    $absolutePath = Join-Path $repoRoot $f
+
+    $looksTemporary = (
+        $n -match '(^|/)(tmp|temp|scratch|playground|debug)(/|$)' -or
+        $n -match '(^|/)(tmp-|temp-|scratch-|playground-|debug-)' -or
+        $n -match '\.(tmp|bak|orig|rej)$'
+    )
+    if ($looksTemporary -and $n -notin $cleanupAllowlist) {
+        $cleanupPaths += $n
+        continue
+    }
+
+    if (Test-PlaceholderWorklog -RepoRelativePath $n -AbsolutePath $absolutePath) {
+        $cleanupPaths += $n
+        continue
+    }
 
     if ($n -like ".local/*") {
         $blockedPaths += $n
@@ -49,6 +107,10 @@ foreach ($f in $stagedFiles) {
 
 if ($blockedPaths.Count -gt 0) {
     Fail ("Plain local env/secrets path is staged: " + ($blockedPaths -join ", "))
+}
+
+if ($cleanupPaths.Count -gt 0) {
+    Fail ("Temporary or placeholder files are staged: " + ($cleanupPaths -join ", ") + ". Clean them up or move retired files to .graveyard first.")
 }
 
 $secretLikePattern = '(?i)\b(api[_-]?key|secret|token|password|private[_-]?key|client[_-]?secret)\b\s*[:=]\s*["'']?[A-Za-z0-9_\-\/\+=]{12,}'
