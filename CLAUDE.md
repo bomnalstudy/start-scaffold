@@ -16,6 +16,11 @@ Before loading docs, select one context pack:
 .\scripts\select-context-pack.ps1 -Agent claude -Pack bugfix
 ```
 
+On WSL, run the same scripts through `pwsh -File`.
+
+Environment strategy defaults to `powershell-bridged`.
+If the project later adopts a Linux-first path, follow `docs/modes/shared/runtime-environment-patterns.md`.
+
 Claude skill wrapper (recommended):
 
 ```powershell

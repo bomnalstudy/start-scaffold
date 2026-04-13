@@ -15,17 +15,11 @@ Use this skill to keep frontend UX and UI work focused on the right rules and ou
 
 Before implementing a new direction, gather and review 3 to 5 strong UI references if the task allows it.
 
-If the surface is unclear, also read:
+If the surface is unclear, also read the global `frontend-quality-guard` skill from your Codex skills home.
 
-- `C:\Users\ghpjh\.codex\skills\frontend-quality-guard\SKILL.md`
+If the surface is browser-first, also read the global `web-ui-quality-guard` skill from your Codex skills home.
 
-If the surface is browser-first, also read:
-
-- `C:\Users\ghpjh\.codex\skills\web-ui-quality-guard\SKILL.md`
-
-If the surface is app-first, also read:
-
-- `C:\Users\ghpjh\.codex\skills\app-ui-quality-guard\SKILL.md`
+If the surface is app-first, also read the global `app-ui-quality-guard` skill from your Codex skills home.
 
 ## Must Do
 

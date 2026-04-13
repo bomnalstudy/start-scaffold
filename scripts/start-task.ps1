@@ -10,6 +10,13 @@ param(
     [string]$Pack = "start"
 )
 
+$runtimeHelpers = Join-Path $PSScriptRoot "shared\runtime-context.helpers.ps1"
+. $runtimeHelpers
+
+$runtimeContext = Get-RuntimeContext -Agent $Agent
+Write-RuntimeContextBanner -Context $runtimeContext
+Write-Host ""
+
 $root = Split-Path -Parent $PSScriptRoot
 $templatePath = Join-Path $root "templates\orchestration-plan.md"
 $worklogTemplatePath = Join-Path $root "templates\journal-entry.md"

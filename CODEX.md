@@ -16,6 +16,11 @@ Before loading docs, select one context pack:
 .\scripts\select-context-pack.ps1 -Agent codex -Pack implement
 ```
 
+On WSL, run the same scripts through `pwsh -File`.
+
+Environment strategy defaults to `powershell-bridged`.
+If the project later adopts a Linux-first path, follow `docs/modes/shared/runtime-environment-patterns.md`.
+
 Codex skill wrapper (recommended):
 
 ```powershell

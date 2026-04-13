@@ -9,6 +9,9 @@ param(
     [switch]$AsPromptBlock
 )
 
+$runtimeHelpers = Join-Path $PSScriptRoot "shared\runtime-context.helpers.ps1"
+. $runtimeHelpers
+
 $root = Split-Path -Parent $PSScriptRoot
 $configPath = Join-Path $root "docs\context-packs.json"
 
@@ -41,8 +44,13 @@ foreach ($p in $selected) {
     }
 }
 
+$runtimeContext = Get-RuntimeContext -Agent $Agent
+
 if ($AsPromptBlock) {
     Write-Host "Use the following context only:"
+    Write-Host "- runtime.platform: $($runtimeContext.platform)"
+    Write-Host "- runtime.isWsl: $($runtimeContext.isWsl)"
+    Write-Host "- runtime.environmentPattern: $($runtimeContext.environmentPattern)"
     foreach ($p in $deduped) {
         Write-Host "- $p"
     }
@@ -54,6 +62,9 @@ if ($AsPromptBlock) {
 Write-Host "Context Pack Selection"
 Write-Host "Agent: $Agent"
 Write-Host "Pack: $Pack"
+Write-Host "Platform: $($runtimeContext.platform)"
+Write-Host "WSL: $($runtimeContext.isWsl)"
+Write-Host "Environment Pattern: $($runtimeContext.environmentPattern)"
 Write-Host ""
 Write-Host "Open these files in order:"
 

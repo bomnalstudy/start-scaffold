@@ -46,6 +46,8 @@
 - inline CSS는 금지한다.
 - 각 컴포넌트/화면 폴더에 별도 CSS 파일을 둔다.
 - 가능하면 CSS Modules를 우선 사용한다.
+- 실행 환경 전략은 `docs/modes/shared/runtime-environment-patterns.md`를 따른다.
+- 환경 패턴은 기본적으로 `powershell-bridged`를 사용하고, Linux-first 요구가 명확할 때만 `native-wsl-linux`를 검토한다.
 
 ## 4.1.1 File Design Rule
 

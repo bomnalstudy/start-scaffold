@@ -16,6 +16,13 @@ param(
     [switch]$PrintPromptOnly
 )
 
+$runtimeHelpers = Join-Path $PSScriptRoot "shared\runtime-context.helpers.ps1"
+. $runtimeHelpers
+
+$runtimeContext = Get-RuntimeContext -Agent $Agent
+Write-RuntimeContextBanner -Context $runtimeContext
+Write-Host ""
+
 $runner = Join-Path $PSScriptRoot "run-skill.ps1"
 & $runner -Agent $Agent -Stage $Stage -TaskName $TaskName -Pack $Pack -PlanPath $PlanPath -WorklogPath $WorklogPath -PrintPromptOnly:$PrintPromptOnly
 exit $LASTEXITCODE

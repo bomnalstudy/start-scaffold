@@ -1,3 +1,12 @@
 #!/bin/sh
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "scripts/hook-pre-push.ps1"
+
+if command -v pwsh >/dev/null 2>&1; then
+  pwsh -NoProfile -File "scripts/hook-pre-push.ps1"
+elif command -v powershell.exe >/dev/null 2>&1; then
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "scripts/hook-pre-push.ps1"
+else
+  echo "Git hook requires PowerShell. Install pwsh on WSL/Linux or use Windows PowerShell."
+  exit 1
+fi
+
 exit $?

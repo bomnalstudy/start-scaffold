@@ -21,6 +21,7 @@ This folder groups repository docs by the skill or mode that uses them most dire
 - `docs/modes/failure-pattern/`: repeated-failure and journaling docs
 - `docs/modes/shared/`: docs reused across multiple modes
   - includes repository-wide docs such as file design rules
+  - includes repository-wide environment strategy docs such as runtime environment patterns
 
 ## Why
 
