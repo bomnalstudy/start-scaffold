@@ -1,11 +1,22 @@
-# PowerShell Entrypoints
+# PowerShell Scripts
 
-This folder is reserved for PowerShell-first wrapper entrypoints when the scaffold grows beyond a single-root `scripts/` layout.
+This folder groups PowerShell scripts by role.
 
 Current repository status:
 
-- the main PowerShell entry scripts still live at `scripts/*.ps1`
-- shared runtime helpers now live under `scripts/shared/`
-- future PowerShell-only launchers should move here gradually instead of forcing one large migration
+- stable compatibility entrypoints still live at `scripts/*.ps1`
+- `scripts/powershell/<role>/` is the role map for browsing and staged migration
+- shared cross-runtime logic should continue moving into `scripts/shared/`
 
-Keep wrappers thin and move reusable logic into `scripts/shared/` when possible.
+Role folders:
+
+- `bootstrap/`
+- `cleanup/`
+- `context/`
+- `guards/`
+- `harness/`
+- `orchestrator/`
+- `secrets/`
+- `skills/`
+
+Use `ROLE-MAP.md` for the current file-to-role mapping.

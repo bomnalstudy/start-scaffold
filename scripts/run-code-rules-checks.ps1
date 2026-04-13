@@ -15,7 +15,8 @@ $rootPath = (Resolve-Path -LiteralPath $Root).Path
 $findings = @()
 $temporaryFileAllowlist = @(
     "scripts\debug-orchestrator.ps1",
-    "scripts\bash\debug-orchestrator.sh"
+    "scripts\bash\debug-orchestrator.sh",
+    "scripts\powershell\orchestrator\debug-orchestrator.ps1"
 )
 
 $excludedDirectories = @(".graveyard", ".local", "handoff", "node_modules", "dist", "build")
