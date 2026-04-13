@@ -71,6 +71,10 @@ If you only want a reusable prompt block without running checks:
 - Read [docs/modes/shared/agent-modes.md](/c:/Users/ghpjh/Desktop/project/start-scaffold/docs/modes/shared/agent-modes.md) for the mode-specific document and output expectations.
 - Use the repo-local skill entry points under `skills/` when you want the mode to be an explicit reusable skill rather than only a documentation rule.
 
+## Repo-Local Utility Skills
+
+- `file-refactor`: use when an existing file is too large, mixes responsibilities, or needs to be split to match the global file design rules.
+
 ## UI UX Rule
 
 - For frontend UI/UX work, agents must also follow `docs/modes/ux-ui/ui-ux-product-rules.md`.
