@@ -1,0 +1,4 @@
+interface:
+  display_name: "Optimize Mode"
+  short_description: "Focus on latency, load, and steady UX"
+  default_prompt: "Use optimize-mode to focus on responsiveness, request efficiency, load handling, and steady UX without collapsing into traffic-only thinking."

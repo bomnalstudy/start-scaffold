@@ -1,4 +1,0 @@
-interface:
-  display_name: "File Refactor"
-  short_description: "Split oversized or mixed-responsibility files cleanly"
-  default_prompt: "Use file-refactor to review the target file, identify mixed responsibilities, choose a split boundary, refactor into review-friendly files, and verify the result."

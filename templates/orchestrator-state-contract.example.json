@@ -74,7 +74,7 @@
       "allowedWriters": [
         "prompt-orchestrator",
         "secure-orchestrator",
-        "performance-orchestrator"
+        "optimize-orchestrator"
       ],
       "writeMode": "namespaced-patch",
       "conflictPolicy": "namespace-owner"
@@ -93,8 +93,8 @@
     "secure-orchestrator": [
       "workerOutputs.secure-orchestrator"
     ],
-    "performance-orchestrator": [
-      "workerOutputs.performance-orchestrator"
+    "optimize-orchestrator": [
+      "workerOutputs.optimize-orchestrator"
     ]
   }
 }

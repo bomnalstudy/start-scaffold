@@ -43,7 +43,7 @@ $sanitizedRelativePath = $relativePath -replace '[:\\/]', '__'
 $fileName = [System.IO.Path]::GetFileName($resolvedPath)
 $extension = [System.IO.Path]::GetExtension($resolvedPath)
 $fileNameWithoutExtension = [System.IO.Path]::GetFileNameWithoutExtension($resolvedPath)
-$archiveBaseName = if ([string]::IsNullOrWhiteSpace($extension)) { $fileName } else { $fileName }
+$archiveBaseName = $sanitizedRelativePath
 $archivePath = Join-Path $graveyardFilesDir $archiveBaseName
 $noteBaseName = if ([string]::IsNullOrWhiteSpace($extension)) {
     $sanitizedRelativePath
@@ -178,9 +178,9 @@ if (Test-IsTextFile -FilePath $resolvedPath) {
     if ($style.Mode -eq "Disabled") {
         $disabledSuffix = if ($style.ContainsKey("Suffix")) { $style.Suffix } else { ".disabled" }
         $archiveFileName = if ([string]::IsNullOrWhiteSpace($extension)) {
-            $fileName + $disabledSuffix
+            $sanitizedRelativePath + $disabledSuffix
         } else {
-            $fileNameWithoutExtension + $disabledSuffix
+            ($sanitizedRelativePath.Substring(0, $sanitizedRelativePath.Length - $extension.Length) + "__" + $extension.TrimStart('.') + $disabledSuffix)
         }
         $archivePath = Join-Path $graveyardFilesDir $archiveFileName
 

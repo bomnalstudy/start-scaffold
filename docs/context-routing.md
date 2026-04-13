@@ -48,7 +48,9 @@ Use modes as a narrow overlay on top of the base pack, not as a replacement for 
 
 - `ux-ui-mode`: UX/UI routing and quality-guard-first context
 - `secure-mode`: security-sensitive coding and secrets handling
-- `performance-mode`: lag, bottleneck, and stability optimization
+- `optimize-mode`: lag, bottleneck, API/data-flow, and stability optimization
+- `db-mode`: schema design, ownership rules, and database-backed API contract work
+- `code-refactor-mode`: maintainability-focused code review, refactoring, and conservative cleanup
 - `orchestrator-mode`: orchestrator runtime, state contract, host wrapper, and version-naming work
 - `harness-mode`: harness scenario, assertion, and verification-loop work
 - `failure-pattern-mode`: repeated issue logging and prevention

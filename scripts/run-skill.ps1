@@ -68,7 +68,7 @@ function Write-PromptBlock {
     }
     Write-Host ""
     Write-Host "Request style:"
-    Write-Host "- speed-first MVP"
+    Write-Host "- minimum-goal MVP"
     Write-Host "- avoid non-goal changes"
     Write-Host "- stop when Done When is met"
 }

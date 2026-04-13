@@ -39,7 +39,7 @@ If the surface is app-first, also read:
 
 ## Avoid First
 
-- security or performance docs unless the UX/UI task clearly requires them
+- security or optimization docs unless the UX/UI task clearly requires them
 - unrelated architecture docs
 - adding interface features when the main issue is clarity, structure, or interaction flow
 - using emoji as UI icons

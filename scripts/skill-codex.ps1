@@ -10,6 +10,6 @@ param(
     [switch]$PrintPromptOnly
 )
 
-$runner = Join-Path $PSScriptRoot "run-skill.ps1"
+$runner = Join-Path $PSScriptRoot "skill-minimum-goal.ps1"
 & $runner -Agent codex -Stage $Stage -TaskName $TaskName -Pack $Pack -PlanPath $PlanPath -WorklogPath $WorklogPath -PrintPromptOnly:$PrintPromptOnly
 exit $LASTEXITCODE

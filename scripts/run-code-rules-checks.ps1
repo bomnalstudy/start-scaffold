@@ -3,91 +3,13 @@ param(
     [string]$Root = (Split-Path -Parent $PSScriptRoot),
     [int]$MaxLines = 500,
     [string[]]$SourceExtensions = @(".js", ".jsx", ".ts", ".tsx", ".css", ".scss", ".less", ".html", ".json", ".md", ".ps1", ".py"),
-    [switch]$EmitJson
+[switch]$EmitJson
 )
 
 $ErrorActionPreference = "Stop"
 
-function Get-RelativePath {
-    param(
-        [string]$BasePath,
-        [string]$TargetPath
-    )
-
-    $baseFull = [System.IO.Path]::GetFullPath($BasePath)
-    $targetFull = [System.IO.Path]::GetFullPath($TargetPath)
-    $separator = [System.IO.Path]::DirectorySeparatorChar
-
-    if (-not $baseFull.EndsWith([string]$separator)) {
-        $baseFull += [string]$separator
-    }
-
-    if ($targetFull.StartsWith($baseFull, [System.StringComparison]::OrdinalIgnoreCase)) {
-        return $targetFull.Substring($baseFull.Length).TrimStart($separator)
-    }
-
-    return $targetFull
-}
-
-function New-Finding {
-    param(
-        [string]$Rule,
-        [string]$Severity,
-        [string]$Path,
-        [string]$Message
-    )
-
-    [pscustomobject]@{
-        rule = $Rule
-        severity = $Severity
-        path = $Path
-        message = $Message
-    }
-}
-
-function Test-LineLevelSensitiveLogSignal {
-    param(
-        [string]$Content,
-        [string]$LogPattern,
-        [string]$SensitivePattern
-    )
-
-    $lines = $Content -split "`r?`n"
-    foreach ($line in $lines) {
-        if ($line -match $LogPattern -and $line -match $SensitivePattern) {
-            return $true
-        }
-    }
-
-    return $false
-}
-
-function Test-PowerShellSensitiveLogSignal {
-    param(
-        [string]$Content
-    )
-
-    $lines = $Content -split "`r?`n"
-    $logPattern = '(?i)Write-Host|Write-Output'
-    $sensitiveVariablePattern = '(?i)\$[{(]?[A-Za-z0-9_]*(token|secret|password|authorization|api[_-]?key|client[_-]?secret|passphrase)[A-Za-z0-9_]*'
-    $safeSuffixPattern = '(?i)(Path|Dir|File|Profile)'
-
-    foreach ($line in $lines) {
-        if ($line -notmatch $logPattern) {
-            continue
-        }
-
-        if ($line -match $sensitiveVariablePattern) {
-            if ($line -match $safeSuffixPattern) {
-                continue
-            }
-
-            return $true
-        }
-    }
-
-    return $false
-}
+. (Join-Path $PSScriptRoot "run-code-rules.helpers.ps1")
+. (Join-Path $PSScriptRoot "run-code-rules.security.ps1")
 
 $rootPath = (Resolve-Path -LiteralPath $Root).Path
 $findings = @()
@@ -132,20 +54,7 @@ foreach ($file in $files) {
     }
 
     if (($normalizedRelativePath -like "worklogs\*.md" -or $normalizedRelativePath -like "worklogs\tasks\*.md")) {
-        $placeholderSignals = 0
-        foreach ($signal in @(
-            "## Date`r`n`r`nYYYY-MM-DD",
-            "## Original Goal`r`n`r`n-",
-            "## Project / Task`r`n`r`n-",
-            "## MVP Scope`r`n`r`n-",
-            "## Done When`r`n`r`n-"
-        )) {
-            if ($content.Contains($signal)) {
-                $placeholderSignals++
-            }
-        }
-
-        if ($placeholderSignals -ge 3) {
+        if (Test-PlaceholderWorklogPattern -Content $content) {
             $findings += (New-Finding -Rule "placeholder-worklog" -Severity "error" -Path $relativePath -Message "Worklog/task file still looks like an untouched template. Fill it in or remove it.")
         }
     }
@@ -169,25 +78,7 @@ foreach ($file in $files) {
             $findings += (New-Finding -Rule "ui-state-mix" -Severity "warn" -Path $relativePath -Message "Large UI file appears to mix rendering and state orchestration. Consider splitting into view and hook/state files.")
         }
 
-        $hasSensitiveTerms = ($content -match '(?i)token|secret|password|authorization|api[_-]?key|client[_-]?secret')
-        $hasBrowserStorage = ($content -match '(?i)localStorage\.(setItem|getItem)|sessionStorage\.(setItem|getItem)')
-        $hasUnsafeHtmlSink = ($content -match 'dangerouslySetInnerHTML' -or $content -match 'innerHTML\s*=')
-        $hasSensitiveLogSignal = Test-LineLevelSensitiveLogSignal `
-            -Content $content `
-            -LogPattern '(?i)console\.(log|debug|info|warn|error)\(|logger\.(debug|info|warn|error)\(' `
-            -SensitivePattern '(?i)(token|secret|password|authorization|api[_-]?key|client[_-]?secret)[A-Za-z0-9._\-\]\[]*'
-
-        if ($hasSensitiveTerms -and $hasBrowserStorage) {
-            $findings += (New-Finding -Rule "browser-token-storage" -Severity "warn" -Path $relativePath -Message "Sensitive/auth-related values appear near browser storage usage. Confirm this storage pattern is truly necessary and safe.")
-        }
-
-        if ($hasUnsafeHtmlSink) {
-            $findings += (New-Finding -Rule "unsafe-html-sink" -Severity "warn" -Path $relativePath -Message "Unsafe HTML sink detected. Confirm explicit sanitization and trusted content boundaries.")
-        }
-
-        if ($hasSensitiveLogSignal) {
-            $findings += (New-Finding -Rule "sensitive-log-signal" -Severity "warn" -Path $relativePath -Message "Sensitive/auth-related terms appear in a file that also logs values. Review for raw secret or token leakage in logs.")
-        }
+        $findings += @(Get-SecurityFindings -RelativePath $relativePath -NormalizedExtension $normalizedExtension -Content $content)
     }
 
     if ($relativePath -match '(^|\\)utils(\\|/)?index\.(ts|tsx|js|jsx)$') {
@@ -207,10 +98,7 @@ foreach ($file in $files) {
             $findings += (New-Finding -Rule "script-flow-mix" -Severity "warn" -Path $relativePath -Message "Script appears to mix entrypoint flow, reporting, and helper logic in one file. Consider separating reusable logic.")
         }
 
-        $hasSensitiveLogSignal = Test-PowerShellSensitiveLogSignal -Content $content
-        if ($hasSensitiveLogSignal) {
-            $findings += (New-Finding -Rule "sensitive-log-signal" -Severity "warn" -Path $relativePath -Message "Sensitive terms appear in a script that also prints output. Confirm that raw secret values are not echoed to the console.")
-        }
+        $findings += @(Get-SecurityFindings -RelativePath $relativePath -NormalizedExtension $normalizedExtension -Content $content)
     }
 
     if ($normalizedRelativePath -match 'orchestrator|harness') {
@@ -224,6 +112,8 @@ foreach ($file in $files) {
 
     $graveyardReferenceAllowed = $relativePath -in @(
         "scripts\archive-to-graveyard.ps1",
+        "scripts\find-code-refactor-candidates.ps1",
+        "scripts\find-file-refactor-candidates.ps1",
         "scripts\run-code-rules-checks.ps1"
     )
 

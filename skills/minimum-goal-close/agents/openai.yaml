@@ -1,0 +1,4 @@
+interface:
+  display_name: "Minimum Goal Close"
+  short_description: "Close a task for Claude or Codex"
+  default_prompt: "Use minimum-goal-close to run the shared close workflow for Claude or Codex."

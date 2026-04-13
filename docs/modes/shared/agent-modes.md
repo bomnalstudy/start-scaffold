@@ -12,7 +12,9 @@ The goal is to narrow context on demand so the agent reads only the most relevan
 - Current standard modes:
   - `ux-ui-mode`
   - `secure-mode`
-  - `performance-mode`
+  - `optimize-mode`
+  - `db-mode`
+  - `code-refactor-mode`
   - `orchestrator-mode`
   - `harness-mode`
   - `failure-pattern-mode`
@@ -55,6 +57,11 @@ This is a context-control system, not a hidden automation layer.
   - `AGENTS.md`
   - `docs/modes/secure/secure-by-default-rules.md`
   - `docs/modes/secure/sensitive-logging-rule.md`
+  - `docs/modes/secure/common-vulnerability-patterns.md`
+  - `docs/modes/secure/additive-remediation-rule.md`
+  - `docs/modes/secure/user-data-leakage-rules.md`
+  - `docs/modes/secure/auth-session-review-rules.md`
+  - `docs/modes/secure/optional-security-tooling.md`
   - `docs/modes/secure/coding-rules.md`
   - `docs/modes/secure/multi-machine-secrets.md`
   - `secure-secrets/README.md`
@@ -64,24 +71,83 @@ This is a context-control system, not a hidden automation layer.
   - high-risk change review gates
   - sensitive logging and redaction
   - unsafe sinks and storage patterns
+  - additive remediation via helper or wrapper imports
+  - common vulnerability pattern review
+  - user data leakage prevention
+  - auth and session review
+  - optional external scanner fit assessment
   - safe defaults and prevention-first checks
 - Avoid loading first:
   - UI polish docs unless the task is also user-facing
 
-### `performance-mode`
+### `optimize-mode`
 
-- Purpose: reduce lag, bottlenecks, and instability in the app.
+- Purpose: reduce lag, keep UX smooth under load, and improve request, render, and data-flow efficiency without collapsing into infrastructure-only thinking.
 - Read first:
-  - performance-related task plan / worklog
-  - `docs/modes/orchestrator/orchestration-patterns.md` when pipeline flow affects performance
+  - `docs/modes/optimize/optimize-guide.md`
+  - `docs/modes/optimize/latency-and-load-rules.md`
+  - `docs/modes/optimize/api-and-data-optimization-rules.md`
+  - `docs/modes/optimize/additive-optimization-rule.md`
+  - `docs/modes/optimize/request-cancellation-and-waterfall-rules.md`
+  - `docs/modes/optimize/interaction-and-render-rules.md`
+  - `docs/modes/optimize/concurrency-budget-rules.md`
+  - `docs/modes/optimize/measurement-rules.md`
+  - `docs/modes/optimize/reference-patterns-and-tooling.md`
+  - optimization-related task plan / worklog
+  - `docs/modes/orchestrator/orchestration-patterns.md` when pipeline flow affects runtime load
   - `docs/modes/harness/harness-guide.md` when validation behavior is part of the bottleneck
 - Focus on:
-  - app responsiveness
-  - bottleneck isolation
-  - queueing, caching, throttling
-  - traffic distribution as one tool inside broader performance work
-  - failure isolation and graceful degradation
-- Avoid narrowing the mode to traffic distribution only.
+  - user-perceived responsiveness
+  - load, save, and navigation latency
+  - API dedupe, cancellation, batching, and cache freshness
+  - queueing, throttling, and concurrency limits
+  - render discipline, offscreen control, and long-task reduction
+  - measurement-backed tuning instead of guesswork
+  - traffic distribution as one tool inside broader optimization work
+  - graceful degradation and steady behavior under load
+- Prefer additive optimization layers such as wrappers, helpers, schedulers, and cache clients before risky inline rewrites.
+
+### `db-mode`
+
+- Purpose: work on database schema boundaries, ownership rules, query shape, and database-backed API contract design.
+- Read first:
+  - `docs/modes/db/db-api-design-guide.md`
+  - `docs/modes/db/data-modeling-rules.md`
+  - `docs/modes/db/api-contract-rules.md`
+  - `docs/modes/db/data-organization-rules.md`
+  - `docs/modes/db/schema-evolution-and-index-rules.md`
+  - `docs/modes/db/idempotency-and-pagination-rules.md`
+  - `docs/modes/db/reference-patterns-and-tooling.md`
+  - relevant plan/worklog files
+  - `docs/modes/secure/access-control-review-rules.md` when ownership or multi-user access matters
+- Focus on:
+  - entity and table boundaries
+  - ownership and relationships
+  - clean data grouping and namespace boundaries
+  - DTO and endpoint contract design
+  - read/write separation
+  - idempotency and pagination rules
+  - index and migration fit
+  - pagination, filtering, and mutation contract clarity
+  - additive schema evolution instead of risky rewrites
+
+### `code-refactor-mode`
+
+- Purpose: review and refactor code for maintainability, readability, cleanup, and safer future changes.
+- Read first:
+  - `docs/modes/code-refactor/code-refactor-guide.md`
+  - `docs/modes/code-refactor/review-rules.md`
+  - `docs/modes/code-refactor/refactor-patterns.md`
+  - `docs/modes/code-refactor/cleanup-rules.md`
+  - `docs/modes/code-refactor/reference-patterns-and-tooling.md`
+  - relevant plan/worklog files
+- Focus on:
+  - review-first maintainability checks
+  - duplication and drift risk
+  - mixed responsibilities and oversized review units
+  - safe split boundaries
+  - conservative cleanup of stale aliases and empty folders
+  - behavior-preserving refactors
 
 ### `orchestrator-mode`
 
@@ -150,6 +216,7 @@ Use short mode language in chat, for example:
 - `use ux-ui-mode for this`
 - `use ux/ui-mode for this`
 - `switch to secure-mode`
+- `use code-refactor-mode for this`
 - `organize this in orchestrator-mode`
 - `use harness-mode for this`
 
@@ -164,4 +231,4 @@ Then the agent should narrow context before implementation.
 - Connect this mode system to `docs/context-routing.md` and future skill wrappers.
 - Prefer one active mode at a time for MVP tasks.
 - If two modes are both needed, state the primary mode and only borrow the smallest necessary rules from the secondary mode.
-- Repo-local skill entry points live under `skills/ux-ui-mode`, `skills/secure-mode`, `skills/performance-mode`, `skills/orchestrator-mode`, `skills/harness-mode`, and `skills/failure-pattern-mode`.
+- Repo-local skill entry points live under `skills/ux-ui-mode`, `skills/secure-mode`, `skills/optimize-mode`, `skills/db-mode`, `skills/code-refactor-mode`, `skills/orchestrator-mode`, `skills/harness-mode`, and `skills/failure-pattern-mode`.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Refactor Mode"
+  short_description: "Review and refactor for maintainability"
+  default_prompt: "Use code-refactor-mode to review maintainability problems, choose a safe refactor boundary, clean obvious dead weight conservatively, and verify the result."

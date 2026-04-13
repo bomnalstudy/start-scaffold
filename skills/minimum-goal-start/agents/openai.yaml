@@ -1,0 +1,4 @@
+interface:
+  display_name: "Minimum Goal Start"
+  short_description: "Start a task for Claude or Codex"
+  default_prompt: "Use minimum-goal-start to begin a task with the shared minimum-goal workflow. Pick codex or claude with the Agent flag."

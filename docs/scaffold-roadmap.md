@@ -20,10 +20,10 @@
 - Add a lightweight prevention loop so the same issue is less likely to repeat in later sessions.
 - Keep the format short enough to be used during normal MVP work.
 
-### 3. Performance and stability design
+### 3. Optimization and stability design
 
-- Design for app responsiveness and reduced lag under load.
-- Treat traffic distribution as one part of a broader performance topic that also includes bottleneck isolation, queueing, caching, throttling, and graceful degradation.
+- Design for app responsiveness, fast data access, and reduced lag under load.
+- Treat traffic distribution as one part of a broader optimization topic that also includes bottleneck isolation, queueing, caching, throttling, batching, cancellation, and graceful degradation.
 - Keep the first pass at the design level and avoid premature infrastructure lock-in until the pipeline and harness boundaries are clearer.
 
 ### 4. UX/UI follow-up
@@ -43,7 +43,7 @@
 1. Finish UX/UI follow-up in the scaffold workflow.
 2. Define code version naming rules for orchestrator and harness paths.
 3. Add failure pattern recording and repeat-prevention hooks.
-4. Draft performance and stability architecture.
+4. Draft optimization and stability architecture.
 5. Design secure-by-default coding support.
 
 ## Notes

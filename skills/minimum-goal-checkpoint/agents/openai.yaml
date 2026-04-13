@@ -1,0 +1,4 @@
+interface:
+  display_name: "Minimum Goal Checkpoint"
+  short_description: "Checkpoint a task for Claude or Codex"
+  default_prompt: "Use minimum-goal-checkpoint to run the shared checkpoint workflow for Claude or Codex."

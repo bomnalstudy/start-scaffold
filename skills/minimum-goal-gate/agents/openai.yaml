@@ -1,0 +1,4 @@
+interface:
+  display_name: "Minimum Goal Gate"
+  short_description: "Shared minimum-goal workflow"
+  default_prompt: "Use minimum-goal-gate to run the shared Claude/Codex minimum-goal workflow."

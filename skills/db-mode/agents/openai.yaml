@@ -1,0 +1,4 @@
+interface:
+  display_name: "DB Mode"
+  short_description: "Focus on schema and API contract design"
+  default_prompt: "Use db-mode to focus on data modeling, ownership boundaries, and API contract design before implementation details."
