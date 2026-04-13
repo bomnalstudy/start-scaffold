@@ -14,7 +14,8 @@ $ErrorActionPreference = "Stop"
 $rootPath = (Resolve-Path -LiteralPath $Root).Path
 $findings = @()
 $temporaryFileAllowlist = @(
-    "scripts\debug-orchestrator.ps1"
+    "scripts\debug-orchestrator.ps1",
+    "scripts\bash\debug-orchestrator.sh"
 )
 
 $excludedDirectories = @(".graveyard", ".local", "handoff", "node_modules", "dist", "build")

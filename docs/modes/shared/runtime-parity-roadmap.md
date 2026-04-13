@@ -52,14 +52,17 @@ The goal is practical parity with thin shell wrappers and shared logic whenever 
 ### Operational Workflow
 
 - `init-project`
-  - status: `pending`
+  - status: `done`
+  - native entrypoint: `scripts/bash/init-project.sh`
 - `install-git-hooks`
-  - status: `partial`
-  - note: hooks support `pwsh` on WSL, but native bash install flow is not separate yet
+  - status: `done`
+  - native entrypoint: `scripts/bash/install-git-hooks.sh`
 - `find-code-refactor-candidates`
-  - status: `pending`
+  - status: `done`
+  - native entrypoint: `scripts/bash/find-code-refactor-candidates.sh`
 - `archive-to-graveyard`
-  - status: `pending`
+  - status: `done`
+  - native entrypoint: `scripts/bash/archive-to-graveyard.sh`
 - `run-harness-checks`
   - status: `done`
   - native entrypoint: `scripts/bash/run-harness-checks.sh`
@@ -67,25 +70,29 @@ The goal is practical parity with thin shell wrappers and shared logic whenever 
 ### Advanced Runtime
 
 - `invoke-host-wrapper`
-  - status: `pending`
+  - status: `done`
+  - native entrypoint: `scripts/bash/invoke-host-wrapper.sh`
 - `apply-orchestrator-state-patch`
-  - status: `pending`
+  - status: `done`
+  - native entrypoint: `scripts/bash/apply-orchestrator-state-patch.sh`
 - `debug-orchestrator`
-  - status: `pending`
+  - status: `done`
+  - native entrypoint: `scripts/bash/debug-orchestrator.sh`
 - `load-project-secrets`
-  - status: `pending`
+  - status: `done`
+  - native entrypoint: `scripts/bash/load-project-secrets.sh`
 - `export-project-secrets`
-  - status: `pending`
+  - status: `partial`
+  - native entrypoint: `scripts/bash/export-project-secrets.sh`
+  - note: WSL uses a safe PowerShell-bridged wrapper because the secure vault bundle format is not fully native yet.
 - `import-project-secrets`
-  - status: `pending`
+  - status: `partial`
+  - native entrypoint: `scripts/bash/import-project-secrets.sh`
+  - note: WSL uses a safe PowerShell-bridged wrapper because the secure vault bundle format is not fully native yet.
 
 ## Next Upgrade Order
 
-1. `find-code-refactor-candidates`
-2. `archive-to-graveyard`
-3. `init-project`
-4. `load-project-secrets` / `export-project-secrets` / `import-project-secrets`
-5. orchestrator advanced runtime scripts
+1. native secure bundle format for `export-project-secrets` / `import-project-secrets`
 
 ## Stop Rule
 

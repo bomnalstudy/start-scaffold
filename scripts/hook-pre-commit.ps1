@@ -89,7 +89,8 @@ $cleanupPaths = @()
 $scanTargets = New-Object System.Collections.Generic.List[string]
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $cleanupAllowlist = @(
-    "scripts/debug-orchestrator.ps1"
+    "scripts/debug-orchestrator.ps1",
+    "scripts/bash/debug-orchestrator.sh"
 )
 $lineCheckedExtensions = @(".js", ".jsx", ".ts", ".tsx", ".css", ".scss", ".less", ".html", ".json", ".md", ".ps1", ".py")
 $maxLines = 500

@@ -23,7 +23,7 @@ def read_payload(payload_json: str, payload_path: str) -> dict:
     if payload_json and payload_path:
         raise ValueError("Use either payload_json or payload_path, not both.")
     if payload_path:
-        raw = Path(payload_path).read_text(encoding="utf-8").strip()
+        raw = Path(payload_path).read_text(encoding="utf-8-sig").strip()
         return json.loads(raw) if raw else {}
     if payload_json:
         return json.loads(payload_json)

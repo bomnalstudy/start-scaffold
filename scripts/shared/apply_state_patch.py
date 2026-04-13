@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 def read_json(path: str) -> dict:
-    raw = Path(path).read_text(encoding="utf-8").strip()
+    raw = Path(path).read_text(encoding="utf-8-sig").strip()
     return json.loads(raw) if raw else {}
 
 
