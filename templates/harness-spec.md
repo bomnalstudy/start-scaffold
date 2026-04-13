@@ -12,6 +12,10 @@
 
 - Prompt Harness / Script Harness / Test Harness
 
+## Scenario Name
+
+- `harness.<scenario>.<version>.<ext>`
+
 ## Scenarios
 
 1. 

@@ -1,0 +1,22 @@
+target: central state contract patch validation
+why: stale writes must fail before they can overwrite canonical state
+level: Script Harness
+scenario: harness.stale-snapshot-reject.v1.yaml
+preconditions:
+  - apply-orchestrator-state-patch.ps1 exists
+  - state snapshot version is newer than patch snapshot version
+actions:
+  - run patch apply against a stale patch
+assertions:
+  - result success is false
+  - result status is rejected-stale-snapshot
+  - result error code is stale_snapshot
+  - output includes the current snapshot version
+failure_output:
+  - Scenario
+  - Step
+  - Expected
+  - Actual
+run_command: .\scripts\run-harness-checks.ps1 -Scenario stale-snapshot-reject
+notes:
+  - this is the first concrete regression-safe check for the state contract

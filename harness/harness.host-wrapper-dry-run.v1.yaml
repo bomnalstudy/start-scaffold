@@ -1,0 +1,22 @@
+target: host wrapper normalization
+why: host invocation shape must stay stable before real adapters are added
+level: Script Harness
+scenario: harness.host-wrapper-dry-run.v1.yaml
+preconditions:
+  - invoke-host-wrapper.ps1 exists
+  - codex host key is supported
+actions:
+  - run invoke-host-wrapper.ps1 in dry-run mode with a minimal payload
+assertions:
+  - result success is true
+  - result status is dry-run
+  - result host key is codex
+  - result payload meta normalizedHost is codex
+failure_output:
+  - Scenario
+  - Step
+  - Expected
+  - Actual
+run_command: .\scripts\run-harness-checks.ps1 -Scenario host-wrapper-dry-run
+notes:
+  - verify only normalized contract shape, not adapter execution

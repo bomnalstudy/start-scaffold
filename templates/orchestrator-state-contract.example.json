@@ -1,0 +1,69 @@
+{
+  "contractVersion": "v1",
+  "owner": "main-orchestrator",
+  "store": {
+    "kind": "central-state-store",
+    "writeMode": "validated-patch"
+  },
+  "sharedValues": {
+    "runId": {
+      "type": "string",
+      "owner": "main-orchestrator",
+      "required": true,
+      "mutable": false
+    },
+    "hostTarget": {
+      "type": "string",
+      "owner": "main-orchestrator",
+      "required": true,
+      "mutable": true,
+      "allowedValues": [
+        "codex",
+        "claude",
+        "local"
+      ]
+    },
+    "inputRefs": {
+      "type": "object",
+      "owner": "main-orchestrator",
+      "required": true,
+      "mutable": true
+    },
+    "stageStatus": {
+      "type": "object",
+      "owner": "main-orchestrator",
+      "required": true,
+      "mutable": true
+    },
+    "artifactVersion": {
+      "type": "string",
+      "owner": "main-orchestrator",
+      "required": true,
+      "mutable": true
+    },
+    "workerOutputs": {
+      "type": "object",
+      "owner": "worker-orchestrators",
+      "required": false,
+      "mutable": true,
+      "writeMode": "namespaced-patch"
+    }
+  },
+  "patchRules": {
+    "requireSnapshotVersion": true,
+    "allowFullRewrite": false,
+    "rejectUnknownKeys": true,
+    "failOnMeaningConflict": true
+  },
+  "workerNamespaces": {
+    "prompt-orchestrator": [
+      "workerOutputs.prompt-orchestrator"
+    ],
+    "secure-orchestrator": [
+      "workerOutputs.secure-orchestrator"
+    ],
+    "performance-orchestrator": [
+      "workerOutputs.performance-orchestrator"
+    ]
+  }
+}

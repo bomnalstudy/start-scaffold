@@ -1,0 +1,16 @@
+{
+  "snapshotVersion": "v1",
+  "artifactVersion": "v1",
+  "runId": "run-20260413-150000",
+  "hostTarget": "codex",
+  "inputRefs": {
+    "userRequest": "docs/scaffold-roadmap.md"
+  },
+  "stageStatus": {
+    "plan": "ready",
+    "execute": "pending"
+  },
+  "workerOutputs": {
+    "prompt-orchestrator": {}
+  }
+}

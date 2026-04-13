@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-04-13T14:10:00+09:00",
+  "runId": "run-20260413-141000",
+  "stage": "invoke-host",
+  "owner": "main-orchestrator",
+  "action": "sync-state",
+  "host": "codex",
+  "status": "dry-run",
+  "snapshotVersion": "v1",
+  "artifactVersion": "v1",
+  "message": "Normalized host invocation completed.",
+  "patchKeys": [],
+  "inputRefs": [
+    "input.user-request"
+  ],
+  "scenarioId": "host-wrapper-dry-run",
+  "errorCode": null,
+  "details": {
+    "adapter": "skill-codex.ps1"
+  }
+}

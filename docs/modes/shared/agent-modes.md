@@ -14,6 +14,7 @@ The goal is to narrow context on demand so the agent reads only the most relevan
   - `secure-mode`
   - `performance-mode`
   - `orchestrator-mode`
+  - `harness-mode`
   - `failure-pattern-mode`
 
 ## Core Behavior
@@ -69,7 +70,7 @@ This is a context-control system, not a hidden automation layer.
 - Read first:
   - performance-related task plan / worklog
   - `docs/modes/orchestrator/orchestration-patterns.md` when pipeline flow affects performance
-  - `docs/modes/orchestrator/harness-guide.md` when harness behavior is part of the bottleneck
+  - `docs/modes/harness/harness-guide.md` when validation behavior is part of the bottleneck
 - Focus on:
   - app responsiveness
   - bottleneck isolation
@@ -80,18 +81,43 @@ This is a context-control system, not a hidden automation layer.
 
 ### `orchestrator-mode`
 
-- Purpose: work on orchestrator, harness, pipeline rules, and version naming discipline.
+- Purpose: work on orchestrator runtime, pipeline rules, host wrappers, state contracts, and version naming discipline.
 - Read first:
+  - `docs/modes/orchestrator/orchestrator-structure.md`
+  - `docs/modes/orchestrator/state-ownership-rules.md`
+  - `docs/modes/orchestrator/host-wrapper-rule.md`
+  - `docs/modes/orchestrator/version-naming-rules.md`
+  - `docs/modes/orchestrator/structured-debug-logging-rule.md`
+  - `docs/modes/orchestrator/state-patch-flow.md`
   - `docs/modes/orchestrator/orchestration-patterns.md`
-  - `docs/modes/orchestrator/harness-guide.md`
   - `docs/modes/orchestrator/session-guard.md`
   - relevant plan/worklog files
 - Focus on:
+  - folder and responsibility boundaries
+  - central state ownership
+  - host wrapper stability
+  - debug log correlation
+  - snapshot and patch flow
   - version naming rules
   - handoff clarity between stages
   - pipeline-safe file/output naming
-  - harness compatibility
 - Must treat version naming as a first-class concern for generated artifacts.
+
+### `harness-mode`
+
+- Purpose: work on harness scenario design, assertions, verification loops, and regression-safe validation.
+- Read first:
+  - `docs/modes/harness/harness-guide.md`
+  - `docs/modes/harness/harness-scenario-rules.md`
+  - `docs/modes/harness/stale-snapshot-harness-template.md`
+  - `templates/harness-spec.md`
+  - relevant plan/worklog files
+- Focus on:
+  - harness level choice
+  - scenario naming rules
+  - assertion clarity
+  - failure output readability
+  - repeatable validation loops
 
 ### `failure-pattern-mode`
 
@@ -115,6 +141,7 @@ Use short mode language in chat, for example:
 - `use ux/ui-mode for this`
 - `switch to secure-mode`
 - `organize this in orchestrator-mode`
+- `use harness-mode for this`
 
 Then the agent should narrow context before implementation.
 
@@ -127,4 +154,4 @@ Then the agent should narrow context before implementation.
 - Connect this mode system to `docs/context-routing.md` and future skill wrappers.
 - Prefer one active mode at a time for MVP tasks.
 - If two modes are both needed, state the primary mode and only borrow the smallest necessary rules from the secondary mode.
-- Repo-local skill entry points live under `skills/ux-ui-mode`, `skills/secure-mode`, `skills/performance-mode`, `skills/orchestrator-mode`, and `skills/failure-pattern-mode`.
+- Repo-local skill entry points live under `skills/ux-ui-mode`, `skills/secure-mode`, `skills/performance-mode`, `skills/orchestrator-mode`, `skills/harness-mode`, and `skills/failure-pattern-mode`.

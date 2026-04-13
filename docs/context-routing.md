@@ -38,7 +38,7 @@ If you want a compact prompt block:
 - `implement`: normal MVP implementation work
 - `bugfix`: narrow, regression-safe debugging flow
 - `review`: risk-focused review context
-- `orchestration`: harness and orchestration design/maintenance
+- `orchestration`: orchestrator runtime and harness verification design/maintenance
 - `secrets`: project-scoped token/env handling
 - `token-audit`: optimize token usage and prompt discipline
 
@@ -49,5 +49,6 @@ Use modes as a narrow overlay on top of the base pack, not as a replacement for 
 - `ux-ui-mode`: UX/UI routing and quality-guard-first context
 - `secure-mode`: security-sensitive coding and secrets handling
 - `performance-mode`: lag, bottleneck, and stability optimization
-- `orchestrator-mode`: orchestrator, harness, and version-naming work
+- `orchestrator-mode`: orchestrator runtime, state contract, host wrapper, and version-naming work
+- `harness-mode`: harness scenario, assertion, and verification-loop work
 - `failure-pattern-mode`: repeated issue logging and prevention

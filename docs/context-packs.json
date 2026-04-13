@@ -38,7 +38,12 @@
     ],
     "orchestration": [
       "docs/modes/orchestrator/orchestration-patterns.md",
-      "docs/modes/orchestrator/harness-guide.md",
+      "docs/modes/orchestrator/orchestrator-structure.md",
+      "docs/modes/orchestrator/state-ownership-rules.md",
+      "docs/modes/orchestrator/host-wrapper-rule.md",
+      "docs/modes/orchestrator/version-naming-rules.md",
+      "docs/modes/harness/harness-guide.md",
+      "docs/modes/harness/harness-scenario-rules.md",
       "templates/harness-spec.md"
     ],
     "secrets": [

@@ -1,0 +1,4 @@
+display_info:
+  name: "harness-mode"
+  short_description: "Work on harness scenarios, assertions, and verification loops"
+  default_prompt: "Use harness-mode to focus on scenario validation, pass/fail output, and repeatable verification without drifting into general orchestrator runtime design."

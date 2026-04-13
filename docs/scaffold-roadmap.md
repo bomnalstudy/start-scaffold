@@ -11,6 +11,8 @@
 - Define a consistent naming rule for versioned code artifacts in the scaffold.
 - Apply the rule with extra care to orchestrator and harness outputs so pipeline stages do not confuse similar files later.
 - Document where the version label must appear: file name, generated output, plan/worklog references, and handoff points.
+- Keep a stable host-wrapper path for orchestrator execution so host drift does not spread across orchestrators.
+- Make the main orchestrator own the shared state contract while worker orchestrators read snapshots and submit patch-style updates.
 
 ### 2. Failure pattern memory
 

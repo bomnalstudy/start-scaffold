@@ -1,0 +1,10 @@
+{
+  "runId": "run-20260413-150500",
+  "snapshotVersion": "v1",
+  "changes": {
+    "workerOutputs.prompt-orchestrator.summary": {
+      "status": "completed",
+      "message": "Prompt normalization finished."
+    }
+  }
+}
