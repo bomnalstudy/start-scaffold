@@ -13,6 +13,8 @@ Use this skill to keep frontend UX and UI work focused on the right rules and ou
 2. `docs/modes/shared/agent-modes.md`
 3. the current task plan and worklog for the UX/UI task
 
+Before implementing a new direction, gather and review 3 to 5 strong UI references if the task allows it.
+
 If the surface is unclear, also read:
 
 - `C:\Users\ghpjh\.codex\skills\frontend-quality-guard\SKILL.md`
@@ -30,19 +32,24 @@ If the surface is app-first, also read:
 - classify the surface as `web`, `app`, `shared`, or `non-UI`
 - record the chosen quality guard
 - state the primary UX concern before broad polishing
+- summarize the typography, spacing, icon, and CTA patterns borrowed from references when references are used
 - keep the main task obvious before adding decoration
 - prefer layout, hierarchy, readability, contrast, spacing, responsive fit, and interaction clarity over feature sprawl
+- keep icon use consistent and outline-based unless the product already uses a different system
 
 ## Avoid First
 
 - security or performance docs unless the UX/UI task clearly requires them
 - unrelated architecture docs
 - adding interface features when the main issue is clarity, structure, or interaction flow
+- using emoji as UI icons
+- choosing colors or fonts impulsively without a narrow system
 
 ## Output Shape
 
 When doing implementation or review in this mode, prefer:
 
+- reference summary
 - surface classification
 - chosen quality guard
 - main UX issue

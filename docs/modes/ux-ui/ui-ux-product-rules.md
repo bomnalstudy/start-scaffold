@@ -40,6 +40,50 @@ These rules apply to both web and app UI:
 - Do not add emojis by default in product UI.
 - Do not let interfaces feel clever at the expense of usability.
 
+## Typography Rules
+
+- Use no more than two font families by default.
+- Keep body text in readable regular or medium weights; avoid very thin weights for normal UI reading.
+- Build hierarchy with size, weight, spacing, and layout before using color as the main differentiator.
+- Keep type scale intentional: headings should step clearly, body sizes should stay consistent, and helper text should remain readable.
+- Avoid decorative type choices unless the product surface clearly supports them.
+
+## Color Rules
+
+- Start from a restrained palette: neutrals first, then one primary accent plus semantic colors for success, warning, and error.
+- Do not use multiple accent colors at equal visual weight on the same surface.
+- Use color to support hierarchy, not replace it.
+- Keep normal text contrast strong enough to stay readable; use at least WCAG-level minimum contrast for text and critical UI.
+- Reserve saturated colors for actions, status, or focused emphasis rather than broad decoration.
+
+## Icon Rules
+
+- Do not use emoji as product UI icons.
+- Prefer outline or wireframe-style icon systems with consistent stroke and sizing.
+- Do not mix unrelated icon families on one surface.
+- Use icons to support scanning, not to decorate every label or row.
+- If no project-specific icon system exists, prefer a consistent outline set such as `Lucide` or a similar wireframe family.
+
+## Layout And Overflow Rules
+
+- Do not let cards, chips, tables, dialogs, or CTA groups drift outside the viewport without a deliberate scrolling pattern.
+- Treat narrow widths and small screens as part of the first design pass.
+- Important content and actions should still work at `320 CSS px` width without horizontal overflow.
+- Keep interactive targets comfortably usable; align with WCAG minimum target-size guidance for important controls.
+- Long labels, helper text, empty states, and error states should not break layout when they wrap.
+
+## Reference-First Workflow
+
+- Before implementing a new UI direction, gather 3 to 5 reference images or product examples first.
+- Use references to extract patterns, not to copy layouts blindly.
+- Summarize what you are borrowing:
+  - typography mood
+  - spacing density
+  - icon style
+  - CTA emphasis
+  - card/list structure
+- Prefer references from strong product UI, not novelty shots or purely decorative concept art.
+
 ## Shared Anti-Patterns
 
 Block these by default:
@@ -51,6 +95,9 @@ Block these by default:
 - components leaving the viewport or clipping badly
 - mixing too many visual styles in one product surface
 - platform-inappropriate interaction patterns
+- emoji used as interface icons
+- accent-color overload without hierarchy
+- overscaled hero sections or cards that force important actions below the fold without reason
 
 ## Web Rules
 
@@ -102,5 +149,6 @@ These rules are grounded in public, established guidance rather than agent prefe
 - Android / Material adaptive and touch guidance
 - W3C WCAG 2.2 accessibility guidance
 - Nielsen Norman Group usability heuristics
+- public icon-system consistency guidance such as Lucide and Material Symbols references
 
 Use the specialized skill reference files for deeper source notes and links.
