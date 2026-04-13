@@ -10,6 +10,8 @@ $root = Split-Path -Parent $PSScriptRoot
 $graveyardFilesDir = Join-Path $root ".graveyard\files"
 $graveyardNotesDir = Join-Path $root ".graveyard\notes"
 
+. (Join-Path $PSScriptRoot "run-code-rules.helpers.ps1")
+
 New-Item -ItemType Directory -Force -Path $graveyardFilesDir | Out-Null
 New-Item -ItemType Directory -Force -Path $graveyardNotesDir | Out-Null
 
@@ -17,25 +19,6 @@ $resolvedPath = (Resolve-Path -LiteralPath $Path).Path
 
 if (-not (Test-Path -LiteralPath $resolvedPath -PathType Leaf)) {
     throw "Only individual files can be archived: $Path"
-}
-
-function Get-RelativePath {
-    param(
-        [string]$BasePath,
-        [string]$TargetPath
-    )
-
-    $baseFull = [System.IO.Path]::GetFullPath($BasePath)
-    $targetFull = [System.IO.Path]::GetFullPath($TargetPath)
-
-    if (-not $baseFull.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
-        $baseFull += [System.IO.Path]::DirectorySeparatorChar
-    }
-
-    $baseUri = New-Object System.Uri($baseFull)
-    $targetUri = New-Object System.Uri($targetFull)
-    $relativeUri = $baseUri.MakeRelativeUri($targetUri)
-    return [System.Uri]::UnescapeDataString($relativeUri.ToString()).Replace('/', [System.IO.Path]::DirectorySeparatorChar)
 }
 
 $relativePath = Get-RelativePath -BasePath $root -TargetPath $resolvedPath
