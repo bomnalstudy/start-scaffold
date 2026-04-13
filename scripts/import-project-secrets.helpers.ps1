@@ -1,3 +1,5 @@
+ . (Join-Path $PSScriptRoot "project-secrets.crypto.helpers.ps1")
+
 function Get-KeyFromPassphraseLegacy {
     param([string]$Passphrase)
 
@@ -7,30 +9,6 @@ function Get-KeyFromPassphraseLegacy {
         return $sha.ComputeHash($bytes)
     } finally {
         $sha.Dispose()
-    }
-}
-
-function Get-DerivedKeys {
-    param(
-        [string]$Passphrase,
-        [byte[]]$SaltBytes,
-        [int]$Iterations
-    )
-
-    $kdf = [System.Security.Cryptography.Rfc2898DeriveBytes]::new(
-        $Passphrase,
-        $SaltBytes,
-        $Iterations,
-        [System.Security.Cryptography.HashAlgorithmName]::SHA256
-    )
-    try {
-        $material = $kdf.GetBytes(64)
-        return [pscustomobject]@{
-            EncryptionKey = $material[0..31]
-            AuthKey = $material[32..63]
-        }
-    } finally {
-        $kdf.Dispose()
     }
 }
 
@@ -56,39 +34,6 @@ function Get-CanonicalPayload {
     }
 
     return ($lines -join "`n")
-}
-
-function Get-HmacTag {
-    param(
-        [byte[]]$AuthKey,
-        [string]$Payload
-    )
-
-    $hmac = [System.Security.Cryptography.HMACSHA256]::new($AuthKey)
-    try {
-        $payloadBytes = [System.Text.Encoding]::UTF8.GetBytes($Payload)
-        $tagBytes = $hmac.ComputeHash($payloadBytes)
-        return [Convert]::ToBase64String($tagBytes)
-    } finally {
-        $hmac.Dispose()
-    }
-}
-
-function Test-FixedTimeEquals {
-    param(
-        [byte[]]$A,
-        [byte[]]$B
-    )
-
-    if ($A.Length -ne $B.Length) {
-        return $false
-    }
-
-    $diff = 0
-    for ($i = 0; $i -lt $A.Length; $i++) {
-        $diff = $diff -bor ($A[$i] -bxor $B[$i])
-    }
-    return ($diff -eq 0)
 }
 
 function Get-DefaultProfile {
@@ -126,11 +71,8 @@ function Read-ImportPassphrase {
     return $Passphrase
 }
 
-function Get-ImportKeyBytes {
-    param(
-        [object]$Bundle,
-        [string]$Passphrase
-    )
+function Get-BundleFormat {
+    param([object]$Bundle)
 
     $format = 1
     if ($Bundle.PSObject.Properties.Name -contains "format") {
@@ -140,6 +82,16 @@ function Get-ImportKeyBytes {
             throw "Invalid bundle format."
         }
     }
+    return $format
+}
+
+function Get-ImportKeyBytes {
+    param(
+        [object]$Bundle,
+        [string]$Passphrase
+    )
+
+    $format = Get-BundleFormat -Bundle $Bundle
 
     if ($format -eq 1) {
         return Get-KeyFromPassphraseLegacy -Passphrase $Passphrase
@@ -176,4 +128,74 @@ function Get-ImportKeyBytes {
     }
 
     throw "Unsupported bundle format: $format"
+}
+
+function Get-Format3Lines {
+    param(
+        [object]$Bundle,
+        [string]$Passphrase
+    )
+
+    if (-not $Bundle.cipher -or -not $Bundle.kdf -or -not $Bundle.auth) {
+        throw "Bundle is missing cipher/kdf/auth metadata."
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$Bundle.payload)) {
+        throw "Bundle is missing payload."
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$Bundle.cipher.iv)) {
+        throw "Bundle is missing cipher iv."
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$Bundle.kdf.salt)) {
+        throw "Bundle is missing kdf salt."
+    }
+    if (-not $Bundle.kdf.iterations) {
+        throw "Bundle is missing kdf iterations."
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$Bundle.auth.tag)) {
+        throw "Bundle is missing auth tag."
+    }
+
+    $cipherName = [string]$Bundle.cipher.name
+    $kdfName = [string]$Bundle.kdf.name
+    if ($cipherName -ne "aes-256-cbc") {
+        throw "Unsupported format 3 cipher: $cipherName"
+    }
+    if ($kdfName -ne "pbkdf2-sha256") {
+        throw "Unsupported format 3 kdf: $kdfName"
+    }
+
+    $saltBase64 = [string]$Bundle.kdf.salt
+    $iterations = [int]$Bundle.kdf.iterations
+    $payloadBase64 = [string]$Bundle.payload
+    $ivBase64 = [string]$Bundle.cipher.iv
+    $createdAt = [string]$Bundle.createdAt
+    $profile = [string]$Bundle.profile
+
+    $saltBytes = [Convert]::FromBase64String($saltBase64)
+    $derived = Get-DerivedKeys -Passphrase $Passphrase -SaltBytes $saltBytes -Iterations $iterations
+    $canonical = Get-Format3CanonicalPayload -Profile $profile -CreatedAt $createdAt -CipherName $cipherName -IvBase64 $ivBase64 -KdfName $kdfName -Iterations $iterations -SaltBase64 $saltBase64 -PayloadBase64 $payloadBase64
+    $computedTag = Get-HmacTag -AuthKey $derived.AuthKey -Payload $canonical
+
+    $expectedTagBytes = [Convert]::FromBase64String([string]$Bundle.auth.tag)
+    $actualTagBytes = [Convert]::FromBase64String($computedTag)
+    if (-not (Test-FixedTimeEquals -A $expectedTagBytes -B $actualTagBytes)) {
+        throw "Bundle integrity verification failed. Wrong passphrase or modified file. If the passphrase is forgotten, discard this vault and create a new one on the next export."
+    }
+
+    $ivBytes = [Convert]::FromBase64String($ivBase64)
+    $cipherBytes = [Convert]::FromBase64String($payloadBase64)
+    $plainBytes = Unprotect-AesBytes -CipherBytes $cipherBytes -Key $derived.EncryptionKey -Iv $ivBytes
+    $plainText = [System.Text.Encoding]::UTF8.GetString($plainBytes)
+    $plainText = $plainText -replace "`r",""
+
+    $lines = New-Object System.Collections.Generic.List[string]
+    foreach ($line in ($plainText -split "`n")) {
+        if ($line -eq "" -and $lines.Count -gt 0) {
+            continue
+        }
+        if ($line -ne "") {
+            $lines.Add($line)
+        }
+    }
+    return $lines
 }

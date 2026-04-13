@@ -162,9 +162,9 @@ Linux/WSL native 예시:
 - `scripts/load-project-secrets.ps1`
   - 로컬 시크릿을 현재 세션에 로드합니다.
 - `scripts/export-project-secrets.ps1`
-  - 암호화된 시크릿 번들을 만듭니다.
+  - `format 3` 암호화 시크릿 번들을 만듭니다.
 - `scripts/import-project-secrets.ps1`
-  - 다른 환경에서 암호화된 시크릿 번들을 복원합니다.
+  - 다른 환경에서 `format 3` 암호화 시크릿 번들을 복원합니다.
 
 ## 디렉터리 구조
 

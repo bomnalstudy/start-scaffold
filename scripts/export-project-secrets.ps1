@@ -7,78 +7,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$emptyMarker = "__EMPTY_STRING__"
-
-function Get-PlainTextFromSecureString {
-    param([Security.SecureString]$SecureValue)
-
-    $valuePtr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureValue)
-    try {
-        return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($valuePtr)
-    } finally {
-        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($valuePtr)
-    }
-}
-
-function Get-DerivedKeys {
-    param(
-        [string]$Passphrase,
-        [byte[]]$SaltBytes,
-        [int]$Iterations
-    )
-
-    $kdf = [System.Security.Cryptography.Rfc2898DeriveBytes]::new(
-        $Passphrase,
-        $SaltBytes,
-        $Iterations,
-        [System.Security.Cryptography.HashAlgorithmName]::SHA256
-    )
-    try {
-        $material = $kdf.GetBytes(64)
-        return [pscustomobject]@{
-            EncryptionKey = $material[0..31]
-            AuthKey = $material[32..63]
-        }
-    } finally {
-        $kdf.Dispose()
-    }
-}
-
-function Get-CanonicalPayload {
-    param(
-        [string]$Format,
-        [string]$Profile,
-        [string]$CreatedAt,
-        [hashtable]$Secrets
-    )
-
-    $lines = New-Object System.Collections.Generic.List[string]
-    $lines.Add("format=$Format")
-    $lines.Add("profile=$Profile")
-    $lines.Add("createdAt=$CreatedAt")
-
-    foreach ($key in ($Secrets.Keys | Sort-Object)) {
-        $lines.Add("$key=$($Secrets[$key])")
-    }
-
-    return ($lines -join "`n")
-}
-
-function Get-HmacTag {
-    param(
-        [byte[]]$AuthKey,
-        [string]$Payload
-    )
-
-    $hmac = [System.Security.Cryptography.HMACSHA256]::new($AuthKey)
-    try {
-        $payloadBytes = [System.Text.Encoding]::UTF8.GetBytes($Payload)
-        $tagBytes = $hmac.ComputeHash($payloadBytes)
-        return [Convert]::ToBase64String($tagBytes)
-    } finally {
-        $hmac.Dispose()
-    }
-}
+. (Join-Path $PSScriptRoot "project-secrets.crypto.helpers.ps1")
 
 function Get-DefaultProfile {
     $name = [Environment]::GetEnvironmentVariable("PROJECT_NAME", "Process")
@@ -106,7 +35,7 @@ if (-not (Test-Path -LiteralPath $Source)) {
     throw "Secrets source file not found: $Source"
 }
 
-$plainSecrets = [ordered]@{}
+$plainSecrets = @{}
 Get-Content -LiteralPath $Source | ForEach-Object {
     $line = $_.Trim()
 
@@ -156,45 +85,56 @@ try {
     $rng.Dispose()
 }
 $derived = Get-DerivedKeys -Passphrase $Passphrase -SaltBytes $saltBytes -Iterations $iterations
-$encKeyBytes = $derived.EncryptionKey
-$authKeyBytes = $derived.AuthKey
-$encryptedSecrets = @{}
-
-foreach ($entry in $plainSecrets.GetEnumerator()) {
-    if ($null -eq $entry.Value -or $entry.Value -eq "") {
-        $cipherText = $emptyMarker
-    } else {
-        $secureValue = ConvertTo-SecureString -String $entry.Value -AsPlainText -Force
-        $cipherText = ConvertFrom-SecureString -SecureString $secureValue -Key $encKeyBytes
-    }
-    $encryptedSecrets[$entry.Key] = $cipherText
+$ivBytes = New-Object byte[] 16
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+try {
+    $rng.GetBytes($ivBytes)
+} finally {
+    $rng.Dispose()
 }
+
+$renderedLines = New-Object System.Collections.Generic.List[string]
+foreach ($key in ($plainSecrets.Keys | Sort-Object)) {
+    $renderedLines.Add("$key=$($plainSecrets[$key])")
+}
+$plainText = $renderedLines -join "`n"
+if ($plainText.Length -gt 0) {
+    $plainText += "`n"
+}
+$plainBytes = [System.Text.Encoding]::UTF8.GetBytes($plainText)
+$cipherBytes = Protect-AesBytes -PlainBytes $plainBytes -Key $derived.EncryptionKey -Iv $ivBytes
+$payloadBase64 = [Convert]::ToBase64String($cipherBytes)
 
 $outputDir = Split-Path -Parent $Output
 New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
 
-$format = "2"
+$format = 3
 $createdAt = (Get-Date).ToString("o")
-$payload = Get-CanonicalPayload -Format $format -Profile $Profile -CreatedAt $createdAt -Secrets $encryptedSecrets
-$tag = Get-HmacTag -AuthKey $authKeyBytes -Payload $payload
+$cipherName = "aes-256-cbc"
+$kdfName = "pbkdf2-sha256"
+$saltBase64 = [Convert]::ToBase64String($saltBytes)
+$ivBase64 = [Convert]::ToBase64String($ivBytes)
+$payload = Get-Format3CanonicalPayload -Profile $Profile -CreatedAt $createdAt -CipherName $cipherName -IvBase64 $ivBase64 -KdfName $kdfName -Iterations $iterations -SaltBase64 $saltBase64 -PayloadBase64 $payloadBase64
+$tag = Get-HmacTag -AuthKey $derived.AuthKey -Payload $payload
 
 $bundle = [ordered]@{
-    format = 2
+    format = 3
     createdAt = $createdAt
     profile = $Profile
-    encryption = [ordered]@{
-        name = "powershell-securestring-aes-cbc-256"
+    cipher = [ordered]@{
+        name = $cipherName
+        iv = $ivBase64
     }
     kdf = [ordered]@{
-        name = "pbkdf2-sha256"
+        name = $kdfName
         iterations = $iterations
-        salt = [Convert]::ToBase64String($saltBytes)
+        salt = $saltBase64
     }
     auth = [ordered]@{
         name = "hmac-sha256"
         tag = $tag
     }
-    secrets = $encryptedSecrets
+    payload = $payloadBase64
 }
 
 $bundle | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $Output -Encoding UTF8

@@ -82,17 +82,17 @@ The goal is practical parity with thin shell wrappers and shared logic whenever 
   - status: `done`
   - native entrypoint: `scripts/bash/load-project-secrets.sh`
 - `export-project-secrets`
-  - status: `partial`
+  - status: `done`
   - native entrypoint: `scripts/bash/export-project-secrets.sh`
-  - note: WSL uses a safe PowerShell-bridged wrapper because the secure vault bundle format is not fully native yet.
+  - note: native-wsl-linux uses `python3 + openssl` with the shared `format 3` bundle.
 - `import-project-secrets`
-  - status: `partial`
+  - status: `done`
   - native entrypoint: `scripts/bash/import-project-secrets.sh`
-  - note: WSL uses a safe PowerShell-bridged wrapper because the secure vault bundle format is not fully native yet.
+  - note: native-wsl-linux uses `python3 + openssl` for `format 3`; legacy bundles fall back to PowerShell import when available, and re-export is recommended.
 
 ## Next Upgrade Order
 
-1. native secure bundle format for `export-project-secrets` / `import-project-secrets`
+1. keep `format 3` compatibility stable across PowerShell and native-wsl-linux
 
 ## Stop Rule
 

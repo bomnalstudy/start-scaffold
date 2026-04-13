@@ -29,28 +29,34 @@ if (-not (Test-Path -LiteralPath $BundlePath)) {
 
 $bundle = Get-Content -LiteralPath $BundlePath -Raw | ConvertFrom-Json
 
-if (-not $bundle.secrets) {
-    throw "Bundle does not contain any secrets."
-}
-
 $Passphrase = Read-ImportPassphrase -Passphrase $Passphrase
-$keyBytes = Get-ImportKeyBytes -Bundle $bundle -Passphrase $Passphrase
-
+$format = Get-BundleFormat -Bundle $bundle
 $lines = New-Object System.Collections.Generic.List[string]
 
-foreach ($property in $bundle.secrets.PSObject.Properties) {
-    try {
-        $cipherText = [string]$property.Value
-        if ($cipherText.Trim() -eq $emptyMarker) {
-            $plainValue = ""
-        } else {
-            $secureValue = ConvertTo-SecureString -String $cipherText -Key $keyBytes
-            $credential = New-Object System.Management.Automation.PSCredential("user", $secureValue)
-            $plainValue = $credential.GetNetworkCredential().Password
+if ($format -eq 3) {
+    foreach ($line in (Get-Format3Lines -Bundle $bundle -Passphrase $Passphrase)) {
+        $lines.Add($line)
+    }
+} else {
+    if (-not $bundle.secrets) {
+        throw "Bundle does not contain any secrets."
+    }
+
+    $keyBytes = Get-ImportKeyBytes -Bundle $bundle -Passphrase $Passphrase
+    foreach ($property in $bundle.secrets.PSObject.Properties) {
+        try {
+            $cipherText = [string]$property.Value
+            if ($cipherText.Trim() -eq $emptyMarker) {
+                $plainValue = ""
+            } else {
+                $secureValue = ConvertTo-SecureString -String $cipherText -Key $keyBytes
+                $credential = New-Object System.Management.Automation.PSCredential("user", $secureValue)
+                $plainValue = $credential.GetNetworkCredential().Password
+            }
+            $lines.Add("$($property.Name)=$plainValue")
+        } catch {
+            throw "Failed to decrypt secret '$($property.Name)'. Check the passphrase."
         }
-        $lines.Add("$($property.Name)=$plainValue")
-    } catch {
-        throw "Failed to decrypt secret '$($property.Name)'. Check the passphrase."
     }
 }
 
