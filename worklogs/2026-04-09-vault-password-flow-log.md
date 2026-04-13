@@ -18,7 +18,7 @@
 
 - Updated `scripts/export-project-secrets.ps1` so interactive export asks for the passphrase twice and aborts on mismatch.
 - Simplified the forgotten-passphrase policy to non-recoverable: discard the old vault and create a new one on the next export.
-- Rewrote `docs/multi-machine-secrets.md` to clarify passphrase confirmation and recovery expectations.
+- Rewrote `docs/modes/secure/multi-machine-secrets.md` to clarify passphrase confirmation and recovery expectations.
 - Updated `secure-secrets/README.md` and `scripts/import-project-secrets.ps1` with the same operational guidance.
 
 ## Validation

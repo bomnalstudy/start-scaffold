@@ -7,7 +7,7 @@ Claude must follow these documents in order:
 1. `AGENTS.md`
 2. `docs/token-ops-standard.md`
 3. `docs/project-start-brief.md`
-4. `docs/ui-ux-product-rules.md` for frontend UI/UX tasks
+4. `docs/modes/ux-ui/ui-ux-product-rules.md` for frontend UI/UX tasks
 5. task-specific docs as needed
 
 Before loading docs, select one context pack:

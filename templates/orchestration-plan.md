@@ -33,6 +33,12 @@
 
 - 
 
+## UI UX Routing
+
+- Surface: `web` / `app` / `shared` / `non-UI`
+- Quality Guard: `web-ui-quality-guard` / `app-ui-quality-guard` / `frontend-quality-guard` / `n/a`
+- Primary UX concern:
+
 ## Stop If
 
 - 

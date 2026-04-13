@@ -9,6 +9,7 @@ This routing model exists to keep context small and token-efficient.
 - Always load `base` docs.
 - Load one agent adapter (`codex` or `claude`).
 - Load one workload pack (`start`, `implement`, `bugfix`, `review`, `orchestration`, `secrets`, `token-audit`).
+- If the user calls a named mode such as `ux-ui-mode`, `ux/ui-mode`, or `secure-mode`, load that mode's docs before adding extra context.
 - Add extra files only when blocked.
 
 ## Why
@@ -40,3 +41,13 @@ If you want a compact prompt block:
 - `orchestration`: harness and orchestration design/maintenance
 - `secrets`: project-scoped token/env handling
 - `token-audit`: optimize token usage and prompt discipline
+
+## Mode Overlay
+
+Use modes as a narrow overlay on top of the base pack, not as a replacement for planning discipline.
+
+- `ux-ui-mode`: UX/UI routing and quality-guard-first context
+- `secure-mode`: security-sensitive coding and secrets handling
+- `performance-mode`: lag, bottleneck, and stability optimization
+- `orchestrator-mode`: orchestrator, harness, and version-naming work
+- `failure-pattern-mode`: repeated issue logging and prevention

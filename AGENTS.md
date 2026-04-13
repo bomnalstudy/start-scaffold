@@ -1,4 +1,4 @@
-# AGENTS.md
+﻿# AGENTS.md
 
 이 파일은 Codex, Claude, 기타 AI 코딩 에이전트가 프로젝트에서 공통으로 따라야 할 운영 기준 문서입니다.
 
@@ -49,7 +49,7 @@
 
 ## 4.2 UI UX 작업 규칙
 
-- 사용자 대면 UI 작업이면 `docs/ui-ux-product-rules.md`를 반드시 먼저 따른다.
+- 사용자 대면 UI 작업이면 `docs/modes/ux-ui/ui-ux-product-rules.md`를 반드시 먼저 따른다.
 - 작업 대상이 웹이면 `web-ui-quality-guard`, 앱이면 `app-ui-quality-guard` 기준을 적용한다.
 - 웹/앱이 아직 불명확하면 `frontend-quality-guard`로 surface를 먼저 정한 뒤 진행한다.
 - UI 작업에서도 기능 추가보다 정보 위계, 가독성, 대비, 반응형/안전영역, 조작 용이성을 우선한다.
@@ -130,3 +130,9 @@
 - 왜 지금 멈춰도 되는지
 - 다음 작업 추천 1~3개
 - 아직 확인되지 않은 리스크
+
+## 11. Mode Docs Structure Rule
+
+- Docs primarily used by a skill or mode must live under `docs/modes/<mode>/`.
+- Docs reused by multiple skills or modes must live under `docs/modes/shared/`.
+- When moving such docs, update all references in skills, templates, scripts, and worklogs in the same change.

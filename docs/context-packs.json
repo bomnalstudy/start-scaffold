@@ -4,7 +4,7 @@
     "docs/token-ops-standard.md",
     "docs/mvp-focus.md",
     "docs/project-context.compact.md",
-    "docs/session-guard.md"
+    "docs/modes/orchestrator/session-guard.md"
   ],
   "agent_adapters": {
     "codex": [
@@ -18,12 +18,12 @@
     "start": [
       "docs/project-start-brief.md",
       "templates/orchestration-plan.md",
-      "docs/vibe-coding-failure-prevention.md",
-      "docs/agent-skills.md"
+      "docs/modes/failure-pattern/vibe-coding-failure-prevention.md",
+      "docs/modes/shared/agent-skills.md"
     ],
     "implement": [
       "docs/ai-usage-guide.md",
-      "docs/coding-rules.md",
+      "docs/modes/secure/coding-rules.md",
       "docs/workflow.md"
     ],
     "bugfix": [
@@ -33,16 +33,16 @@
     ],
     "review": [
       "docs/project-guardrails.md",
-      "docs/coding-rules.md",
+      "docs/modes/secure/coding-rules.md",
       "docs/token-efficiency.md"
     ],
     "orchestration": [
-      "docs/orchestration-patterns.md",
-      "docs/harness-guide.md",
+      "docs/modes/orchestrator/orchestration-patterns.md",
+      "docs/modes/orchestrator/harness-guide.md",
       "templates/harness-spec.md"
     ],
     "secrets": [
-      "docs/multi-machine-secrets.md",
+      "docs/modes/secure/multi-machine-secrets.md",
       "scripts/load-project-secrets.ps1",
       "scripts/export-project-secrets.ps1",
       "scripts/import-project-secrets.ps1"

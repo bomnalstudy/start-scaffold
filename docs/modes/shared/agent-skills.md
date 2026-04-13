@@ -62,9 +62,20 @@ If you only want a reusable prompt block without running checks:
 - Run `checkpoint` only at major checkpoints (speed-first mode)
 - Always run `close` before ending session
 
+## Mode Rule
+
+- Use short domain names with the `*-mode` format when narrowing a chat session.
+- Current standard modes are `ux-ui-mode`, `secure-mode`, `performance-mode`, `orchestrator-mode`, and `failure-pattern-mode`.
+- Treat `ux/ui-mode` as a chat alias for `ux-ui-mode`.
+- When a mode is called, load only the docs and rules needed for that mode first.
+- Read [docs/modes/shared/agent-modes.md](/c:/Users/ghpjh/Desktop/project/start-scaffold/docs/modes/shared/agent-modes.md) for the mode-specific document and output expectations.
+- Use the repo-local skill entry points under `skills/` when you want the mode to be an explicit reusable skill rather than only a documentation rule.
+
 ## UI UX Rule
 
-- For frontend UI/UX work, agents must also follow `docs/ui-ux-product-rules.md`.
+- For frontend UI/UX work, agents must also follow `docs/modes/ux-ui/ui-ux-product-rules.md`.
 - Use `web-ui-quality-guard` for browser-first UI.
 - Use `app-ui-quality-guard` for app-first UI.
 - Use `frontend-quality-guard` only to route when the surface is still unclear.
+- Record the surface as `web`, `app`, `shared`, or `non-UI` in the task plan before implementation.
+- Record the chosen quality guard in the same task plan so later sessions can recover the UI context quickly.
