@@ -39,6 +39,10 @@ case "${PIPELINE}" in
     stage "Verify"
     "${SCRIPT_DIR}/run-token-ops-checks.sh" --plan-path "${PLAN_PATH}"
     ;;
+  worklog)
+    stage "Verify"
+    "${SCRIPT_DIR}/run-worklog-checks.sh" --worklog-path "${WORKLOG_PATH}"
+    ;;
   all)
     stage "Verify Session Guard"
     if [[ -n "${WORKLOG_PATH}" ]]; then
@@ -50,6 +54,10 @@ case "${PIPELINE}" in
     "${SCRIPT_DIR}/run-token-ops-checks.sh" --plan-path "${PLAN_PATH}"
     stage "Verify Code Rules"
     "${SCRIPT_DIR}/run-code-rules-checks.sh"
+    if [[ -n "${WORKLOG_PATH}" ]]; then
+      stage "Verify Worklog"
+      "${SCRIPT_DIR}/run-worklog-checks.sh" --worklog-path "${WORKLOG_PATH}"
+    fi
     ;;
   *)
     echo "Unsupported pipeline: ${PIPELINE}" >&2
