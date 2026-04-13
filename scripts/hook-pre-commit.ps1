@@ -10,6 +10,34 @@ function Fail {
     exit 1
 }
 
+function Get-LineCount {
+    param([string]$AbsolutePath)
+
+    if (-not (Test-Path -LiteralPath $AbsolutePath)) {
+        return 0
+    }
+
+    return (Get-Content -LiteralPath $AbsolutePath).Count
+}
+
+function Get-StagedAddedLineCount {
+    param([string]$RepoRelativePath)
+
+    $diff = git diff --cached --no-color --unified=0 -- "$RepoRelativePath"
+    if ($LASTEXITCODE -ne 0) {
+        Fail "Failed to read staged diff for $RepoRelativePath."
+    }
+
+    $addedLines = 0
+    foreach ($line in ($diff -split "`r?`n")) {
+        if ($line.StartsWith("+") -and -not $line.StartsWith("+++")) {
+            $addedLines++
+        }
+    }
+
+    return $addedLines
+}
+
 function Test-PlaceholderWorklog {
     param(
         [string]$RepoRelativePath,
@@ -63,6 +91,10 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $cleanupAllowlist = @(
     "scripts/debug-orchestrator.ps1"
 )
+$lineCheckedExtensions = @(".js", ".jsx", ".ts", ".tsx", ".css", ".scss", ".less", ".html", ".json", ".md", ".ps1", ".py")
+$maxLines = 500
+$growthGuardThreshold = 300
+$growthGuardAddedLines = 40
 
 foreach ($f in $stagedFiles) {
     $n = $f.Replace('\', '/')
@@ -81,6 +113,21 @@ foreach ($f in $stagedFiles) {
     if (Test-PlaceholderWorklog -RepoRelativePath $n -AbsolutePath $absolutePath) {
         $cleanupPaths += $n
         continue
+    }
+
+    $extension = [System.IO.Path]::GetExtension($n).ToLowerInvariant()
+    if ($lineCheckedExtensions -contains $extension) {
+        $lineCount = Get-LineCount -AbsolutePath $absolutePath
+        if ($lineCount -gt $maxLines) {
+            Fail "$n has $lineCount lines. Limit is $maxLines. Split the file before commit."
+        }
+
+        if ($lineCount -gt $growthGuardThreshold) {
+            $addedLines = Get-StagedAddedLineCount -RepoRelativePath $n
+            if ($addedLines -ge $growthGuardAddedLines) {
+                Fail "$n has $lineCount lines and this commit adds $addedLines lines. Split or reduce the file before commit."
+            }
+        }
     }
 
     if ($n -like ".local/*") {

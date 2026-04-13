@@ -95,6 +95,7 @@ switch ($Pipeline) {
         Invoke-Stage -Name "Plan" -Action {
             Write-Host "Checks:"
             Write-Host "- max lines per file"
+            Write-Host "- staged file growth before commit"
             Write-Host "- inline style usage"
             Write-Host "- graveyard references"
             Write-Host "- large utils barrel files"

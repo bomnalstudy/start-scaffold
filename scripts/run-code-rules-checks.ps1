@@ -114,12 +114,42 @@ foreach ($file in $files) {
         if ($content -match '@import\s+["''][^"'']+\.css["'']') {
             $findings += (New-Finding -Rule "css-import-style" -Severity "warn" -Path $relativePath -Message "Global CSS import found in source file. Confirm this belongs in a top-level entry file.")
         }
+
+        $hasJsxLikeMarkup = ($content -match '<[A-Z][A-Za-z0-9]*' -or $content -match '<div\b' -or $content -match '<section\b')
+        $hasFetchLogic = ($content -match '\bfetch\(' -or $content -match '\baxios\.' -or $content -match '\buseQuery\(')
+        $hasHeavyState = ($content -match '\buseReducer\(' -or $content -match '\bcreateContext\(' -or $content -match '\buseState\(')
+        if ($hasJsxLikeMarkup -and $hasFetchLogic) {
+            $findings += (New-Finding -Rule "ui-data-mix" -Severity "warn" -Path $relativePath -Message "UI rendering and data-fetching logic appear mixed in one file. Consider splitting view and data concerns.")
+        }
+        if ($hasJsxLikeMarkup -and $hasHeavyState -and $lineCount -gt 200) {
+            $findings += (New-Finding -Rule "ui-state-mix" -Severity "warn" -Path $relativePath -Message "Large UI file appears to mix rendering and state orchestration. Consider splitting into view and hook/state files.")
+        }
     }
 
     if ($relativePath -match '(^|\\)utils(\\|/)?index\.(ts|tsx|js|jsx)$') {
         $exportCount = ([regex]::Matches($content, 'export\s+')).Count
         if ($exportCount -gt 15) {
             $findings += (New-Finding -Rule "large-utils-index" -Severity "warn" -Path $relativePath -Message "Utils barrel exports $exportCount items. This can become a catch-all entrypoint.")
+        }
+    }
+
+    if ($normalizedExtension -eq ".ps1") {
+        $functionCount = ([regex]::Matches($content, '(^|\n)\s*function\s+[A-Za-z0-9_-]+', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)).Count
+        $hasParamBlock = $content -match '(?s)\[CmdletBinding\(\)\].*?param\('
+        if ($functionCount -ge 8 -and $lineCount -gt 220) {
+            $findings += (New-Finding -Rule "large-powershell-script" -Severity "warn" -Path $relativePath -Message "Large PowerShell script with many functions detected. Consider splitting helpers from the entry script.")
+        }
+        if ($hasParamBlock -and $functionCount -ge 6 -and $content -match 'Write-Host' -and $lineCount -gt 180) {
+            $findings += (New-Finding -Rule "script-flow-mix" -Severity "warn" -Path $relativePath -Message "Script appears to mix entrypoint flow, reporting, and helper logic in one file. Consider separating reusable logic.")
+        }
+    }
+
+    if ($normalizedRelativePath -match 'orchestrator|harness') {
+        $hasConfig = ($content -match 'config' -or $content -match 'PlanPath' -or $content -match 'WorklogPath')
+        $hasDispatch = ($content -match 'Invoke-' -or $content -match 'switch\s*\(')
+        $hasReporting = ($content -match 'Write-Host' -or $content -match 'Write-Step')
+        if ($hasConfig -and $hasDispatch -and $hasReporting -and $lineCount -gt 180) {
+            $findings += (New-Finding -Rule "orchestrator-responsibility-mix" -Severity "warn" -Path $relativePath -Message "Orchestrator-related file appears to mix config, dispatch, and reporting concerns. Consider splitting the responsibilities.")
         }
     }
 

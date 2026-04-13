@@ -11,7 +11,8 @@ Read first:
 2. `docs/modes/shared/agent-modes.md`
 3. `docs/modes/secure/coding-rules.md`
 4. `docs/modes/secure/multi-machine-secrets.md`
-5. `secure-secrets/README.md`
+5. `docs/modes/secure/file-growth-guard.md`
+6. `secure-secrets/README.md`
 
 Focus on:
 
@@ -19,5 +20,6 @@ Focus on:
 - auth-sensitive changes
 - high-risk change review
 - prevention-first safety checks
+- oversized file and push-friction prevention
 
 Avoid loading unrelated UI or performance docs unless the task truly needs them.

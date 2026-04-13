@@ -25,6 +25,7 @@ $root = (Get-Location).Path
 $profile = Get-DefaultProfile
 $localPath = Join-Path $root ".local\secrets\$profile.env"
 $vaultPath = Join-Path $root "secure-secrets\$profile.vault.json"
+$codeRulesPath = Join-Path $root "scripts\run-code-rules-checks.ps1"
 
 if (-not (Test-Path -LiteralPath $localPath)) {
     exit 0
@@ -47,6 +48,11 @@ if ($LASTEXITCODE -ne 0) {
 }
 if (-not [string]::IsNullOrWhiteSpace($status)) {
     Fail "Encrypted vault has uncommitted changes. Commit secure-secrets/$profile.vault.json before push."
+}
+
+& $codeRulesPath -Root $root
+if ($LASTEXITCODE -ne 0) {
+    Fail "Repository code-rules checks failed. Fix oversized files or other blocking findings before push."
 }
 
 exit 0

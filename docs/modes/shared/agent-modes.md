@@ -123,6 +123,7 @@ Then the agent should narrow context before implementation.
 - Docs primarily used by a mode should live under `docs/modes/<mode>/`.
 - Docs reused by multiple modes should live under `docs/modes/shared/`.
 - See `docs/modes/README.md` for the folder rule.
+- Global file-structure guidance lives in `docs/modes/shared/file-design-rules.md`.
 - Connect this mode system to `docs/context-routing.md` and future skill wrappers.
 - Prefer one active mode at a time for MVP tasks.
 - If two modes are both needed, state the primary mode and only borrow the smallest necessary rules from the secondary mode.
