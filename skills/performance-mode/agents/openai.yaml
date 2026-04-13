@@ -1,0 +1,4 @@
+interface:
+  display_name: "Performance Mode"
+  short_description: "Focus on lag, bottlenecks, and stability"
+  default_prompt: "Use performance-mode to focus on responsiveness, bottlenecks, load handling, and stability without collapsing into traffic-only thinking."

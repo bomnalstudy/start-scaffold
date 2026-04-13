@@ -1,0 +1,4 @@
+interface:
+  display_name: "Failure Pattern Mode"
+  short_description: "Turn repeated problems into prevention rules and enforcement"
+  default_prompt: "Use failure-pattern-mode to review recent work, find only real actionable patterns if they exist, and propose the lightest effective prevention or enforcement."

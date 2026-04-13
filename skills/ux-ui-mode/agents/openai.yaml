@@ -1,0 +1,4 @@
+interface:
+  display_name: "UX UI Mode"
+  short_description: "Focus on user-facing UX and UI quality"
+  default_prompt: "Use ux-ui-mode to classify the surface, pick the right quality guard, summarize reference patterns, and improve UX/UI without drifting into unrelated work."

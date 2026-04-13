@@ -1,0 +1,4 @@
+interface:
+  display_name: "Orchestrator Mode"
+  short_description: "Work on orchestrator, harness, and pipeline rules"
+  default_prompt: "Use orchestrator-mode to focus on orchestrator, harness, stage handoff, and artifact/version naming work without drifting into unrelated areas."

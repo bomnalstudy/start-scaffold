@@ -1,0 +1,4 @@
+interface:
+  display_name: "Secure Mode"
+  short_description: "Review security-sensitive coding and safer defaults"
+  default_prompt: "Use secure-mode to review or implement security-sensitive work with secrets handling, high-risk change checks, and safe defaults in mind."
