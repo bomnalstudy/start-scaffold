@@ -8,8 +8,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-. (Join-Path $PSScriptRoot "run-code-rules.helpers.ps1")
-. (Join-Path $PSScriptRoot "run-code-rules.security.ps1")
+. (Join-Path $PSScriptRoot "powershell\guards\run-code-rules.helpers.ps1")
+. (Join-Path $PSScriptRoot "powershell\guards\run-code-rules.security.ps1")
 
 $rootPath = (Resolve-Path -LiteralPath $Root).Path
 $findings = @()

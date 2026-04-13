@@ -1,6 +1,6 @@
 ﻿# Project Context Compact
 
-_Generated automatically by scripts/build-project-context.ps1 at 2026-04-09 17:33:14._
+_Generated automatically by scripts/powershell/context/build-project-context.ps1 at 2026-04-09 17:33:14._
 
 ## Always Remember
 
@@ -28,3 +28,4 @@ _Generated automatically by scripts/build-project-context.ps1 at 2026-04-09 17:3
 - Stay within MVP scope.
 - Do not expand scope without explicit confirmation.
 - Re-check Original Goal before each major edit.
+

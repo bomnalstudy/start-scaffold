@@ -19,8 +19,8 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
-. (Join-Path $PSScriptRoot "orchestrator-state.helpers.ps1")
-. (Join-Path $PSScriptRoot "invoke-host-wrapper.helpers.ps1")
+. (Join-Path $PSScriptRoot "powershell\orchestrator\orchestrator-state.helpers.ps1")
+. (Join-Path $PSScriptRoot "powershell\orchestrator\invoke-host-wrapper.helpers.ps1")
 
 $contract = Read-StateJson -Path $ContractPath
 $state = Read-StateJson -Path $StatePath

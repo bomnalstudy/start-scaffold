@@ -116,7 +116,7 @@
 - 한 요청에는 하나의 명확한 목표만 준다.
 - 리뷰와 구현 요청을 한 번에 섞지 않는다.
 - 불필요한 잡담과 반복 설명을 줄인다.
-- 문서는 `docs/context-routing.md`와 `scripts/select-context-pack.ps1` 기준으로 필요한 것만 연다.
+- 문서는 `docs/context-routing.md`와 `scripts/powershell/context/select-context-pack.ps1` 기준으로 필요한 것만 연다.
 
 ## 9. 세션 시작 행동
 

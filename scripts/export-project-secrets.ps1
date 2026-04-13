@@ -7,7 +7,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-. (Join-Path $PSScriptRoot "project-secrets.crypto.helpers.ps1")
+. (Join-Path $PSScriptRoot "powershell\secrets\project-secrets.crypto.helpers.ps1")
 
 function Get-DefaultProfile {
     $name = [Environment]::GetEnvironmentVariable("PROJECT_NAME", "Process")

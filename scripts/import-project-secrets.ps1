@@ -10,7 +10,7 @@ param(
 $ErrorActionPreference = "Stop"
 $emptyMarker = "__EMPTY_STRING__"
 
-. (Join-Path $PSScriptRoot "import-project-secrets.helpers.ps1")
+. (Join-Path $PSScriptRoot "powershell\secrets\import-project-secrets.helpers.ps1")
 
 $root = Split-Path -Parent $PSScriptRoot
 if ([string]::IsNullOrWhiteSpace($Profile)) {

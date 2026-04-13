@@ -1,6 +1,6 @@
 ﻿# Project Context
 
-_Generated automatically by scripts/build-project-context.ps1 at 2026-04-09 17:33:14._
+_Generated automatically by scripts/powershell/context/build-project-context.ps1 at 2026-04-09 17:33:14._
 
 ## Project
 
@@ -55,3 +55,4 @@ _Generated automatically by scripts/build-project-context.ps1 at 2026-04-09 17:3
 
 - If you start a new chat, read docs/project-context.compact.md first.
 - Keep this file updated whenever server/data roots change.
+

@@ -21,7 +21,7 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
-. (Join-Path $PSScriptRoot "invoke-host-wrapper.helpers.ps1")
+. (Join-Path $PSScriptRoot "powershell\orchestrator\invoke-host-wrapper.helpers.ps1")
 
 if (-not $RunId) {
     $RunId = "run-" + (Get-Date -Format "yyyyMMdd-HHmmss")
