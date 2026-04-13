@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet("host-wrapper-dry-run", "stale-snapshot-reject", "all")]
+    [ValidateSet("host-wrapper-dry-run", "stale-snapshot-reject", "secret-bundle-format3-roundtrip", "all")]
     [string]$Scenario = "all",
 
     [string]$Root = (Split-Path -Parent $PSScriptRoot)
@@ -111,6 +111,42 @@ function Invoke-StaleSnapshotRejectScenario {
     }
 }
 
+function Invoke-SecretBundleFormat3RoundtripScenario {
+    $scenarioName = "harness.secret-bundle-format3-roundtrip.v1.yaml"
+    $profile = "harness-format3-ps"
+    $sourcePath = Join-Path $Root ".local\secrets\$profile.env"
+    $bundlePath = Join-Path $Root "secure-secrets\$profile.vault.json"
+    $restoredPath = Join-Path $Root ".local\secrets\$profile.restored.env"
+
+    try {
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $sourcePath) | Out-Null
+        @'
+API_KEY=test-key
+EMPTY_VALUE=
+BASE_URL=https://example.test/api
+'@ | Set-Content -LiteralPath $sourcePath -Encoding UTF8
+
+        & (Join-Path $PSScriptRoot "export-project-secrets.ps1") -Profile $profile -Source $sourcePath -Output $bundlePath -Passphrase "test-passphrase" | Out-Null
+        & (Join-Path $PSScriptRoot "import-project-secrets.ps1") -Profile $profile -BundlePath $bundlePath -Output $restoredPath -Passphrase "test-passphrase" | Out-Null
+
+        $bundle = Get-Content -LiteralPath $bundlePath -Raw | ConvertFrom-Json
+        $restoredContent = Get-Content -LiteralPath $restoredPath -Raw
+
+        Assert-Equal -ScenarioName $scenarioName -Step "format" -Expected "3" -Actual ([string]$bundle.format)
+        Assert-Equal -ScenarioName $scenarioName -Step "cipher.name" -Expected "aes-256-cbc" -Actual ([string]$bundle.cipher.name)
+        Assert-Equal -ScenarioName $scenarioName -Step "restoredContainsApiKey" -Expected $true -Actual ($restoredContent -like '*API_KEY=test-key*')
+        Assert-Equal -ScenarioName $scenarioName -Step "restoredContainsEmptyValue" -Expected $true -Actual ($restoredContent -like '*EMPTY_VALUE=*')
+        Assert-Equal -ScenarioName $scenarioName -Step "restoredContainsBaseUrl" -Expected $true -Actual ($restoredContent -like '*BASE_URL=https://example.test/api*')
+    }
+    finally {
+        foreach ($path in @($sourcePath, $bundlePath, $restoredPath)) {
+            if (Test-Path -LiteralPath $path) {
+                Remove-Item -LiteralPath $path -Force
+            }
+        }
+    }
+}
+
 switch ($Scenario) {
     "host-wrapper-dry-run" {
         Invoke-HostWrapperDryRunScenario
@@ -118,9 +154,13 @@ switch ($Scenario) {
     "stale-snapshot-reject" {
         Invoke-StaleSnapshotRejectScenario
     }
+    "secret-bundle-format3-roundtrip" {
+        Invoke-SecretBundleFormat3RoundtripScenario
+    }
     "all" {
         Invoke-HostWrapperDryRunScenario
         Invoke-StaleSnapshotRejectScenario
+        Invoke-SecretBundleFormat3RoundtripScenario
     }
 }
 

@@ -15,6 +15,7 @@ Examples:
 - `harness.host-wrapper-dry-run.v1.yaml`
 - `harness.stale-snapshot-reject.v1.yaml`
 - `harness.state-patch-accept.v1.yaml`
+- `harness.secret-bundle-format3-roundtrip.v1.yaml`
 
 ## Scenario Requirements
 
@@ -35,6 +36,7 @@ Every harness scenario should define:
 - patch validation
 - handoff packet shape
 - debug log required fields
+- secure bundle roundtrip
 
 ## Assertion Rule
 

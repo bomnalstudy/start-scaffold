@@ -98,12 +98,47 @@ EOF
   assert_equal "${scenario_name}" "currentSnapshotVersion" "v2" "${current_snapshot}"
 }
 
+run_secret_bundle_format3_roundtrip() {
+  local scenario_name="harness.secret-bundle-format3-roundtrip.v1.yaml"
+  local profile="harness-format3-bash"
+  local source_path="${ROOT_DIR}/.local/secrets/${profile}.env"
+  local bundle_path="${ROOT_DIR}/secure-secrets/${profile}.vault.json"
+  local restored_path="${ROOT_DIR}/.local/secrets/${profile}.restored.env"
+
+  mkdir -p "$(dirname "${source_path}")" "$(dirname "${bundle_path}")"
+  cat > "${source_path}" <<'EOF'
+API_KEY=test-key
+EMPTY_VALUE=
+BASE_URL=https://example.test/api
+EOF
+
+  "${ROOT_DIR}/scripts/bash/export-project-secrets.sh" --profile "${profile}" --source "${source_path}" --output "${bundle_path}" --passphrase "test-passphrase" >/dev/null
+  "${ROOT_DIR}/scripts/bash/import-project-secrets.sh" --profile "${profile}" --bundle-path "${bundle_path}" --output "${restored_path}" --passphrase "test-passphrase" >/dev/null
+
+  local format cipher restored_api_key restored_empty restored_base_url
+  format="$(python3 -c "import json, pathlib; print(json.loads(pathlib.Path(r'${bundle_path}').read_text(encoding='utf-8'))['format'])")"
+  cipher="$(python3 -c "import json, pathlib; print(json.loads(pathlib.Path(r'${bundle_path}').read_text(encoding='utf-8'))['cipher']['name'])")"
+  restored_api_key="$(python3 -c "import pathlib; print(str('API_KEY=test-key' in pathlib.Path(r'${restored_path}').read_text(encoding='utf-8')).lower())")"
+  restored_empty="$(python3 -c "import pathlib; print(str('EMPTY_VALUE=' in pathlib.Path(r'${restored_path}').read_text(encoding='utf-8')).lower())")"
+  restored_base_url="$(python3 -c "import pathlib; print(str('BASE_URL=https://example.test/api' in pathlib.Path(r'${restored_path}').read_text(encoding='utf-8')).lower())")"
+
+  assert_equal "${scenario_name}" "format" "3" "${format}"
+  assert_equal "${scenario_name}" "cipher.name" "aes-256-cbc" "${cipher}"
+  assert_equal "${scenario_name}" "restoredContainsApiKey" "true" "${restored_api_key}"
+  assert_equal "${scenario_name}" "restoredContainsEmptyValue" "true" "${restored_empty}"
+  assert_equal "${scenario_name}" "restoredContainsBaseUrl" "true" "${restored_base_url}"
+
+  rm -f "${source_path}" "${bundle_path}" "${restored_path}"
+}
+
 case "${SCENARIO}" in
   host-wrapper-dry-run) run_host_wrapper_dry_run ;;
   stale-snapshot-reject) run_stale_snapshot_reject ;;
+  secret-bundle-format3-roundtrip) run_secret_bundle_format3_roundtrip ;;
   all)
     run_host_wrapper_dry_run
     run_stale_snapshot_reject
+    run_secret_bundle_format3_roundtrip
     ;;
   *)
     echo "Unsupported scenario: ${SCENARIO}" >&2

@@ -7,6 +7,7 @@ Use harness-mode when the task is about scenario validation, repeatable assertio
 - verify orchestrator and pipeline behavior
 - capture repeatable scenario checks
 - keep verification logic separate from orchestration logic
+- protect critical cross-runtime flows such as secrets roundtrip and host/state contracts
 
 ## Harness Levels
 
