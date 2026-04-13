@@ -53,6 +53,8 @@ This is a context-control system, not a hidden automation layer.
 - Purpose: strengthen security posture during coding and review high-risk changes safely.
 - Read first:
   - `AGENTS.md`
+  - `docs/modes/secure/secure-by-default-rules.md`
+  - `docs/modes/secure/sensitive-logging-rule.md`
   - `docs/modes/secure/coding-rules.md`
   - `docs/modes/secure/multi-machine-secrets.md`
   - `secure-secrets/README.md`
@@ -60,6 +62,8 @@ This is a context-control system, not a hidden automation layer.
   - secrets handling
   - auth-sensitive changes
   - high-risk change review gates
+  - sensitive logging and redaction
+  - unsafe sinks and storage patterns
   - safe defaults and prevention-first checks
 - Avoid loading first:
   - UI polish docs unless the task is also user-facing
@@ -89,6 +93,7 @@ This is a context-control system, not a hidden automation layer.
   - `docs/modes/orchestrator/version-naming-rules.md`
   - `docs/modes/orchestrator/structured-debug-logging-rule.md`
   - `docs/modes/orchestrator/state-patch-flow.md`
+  - `docs/modes/orchestrator/reliability-patterns.md`
   - `docs/modes/orchestrator/orchestration-patterns.md`
   - `docs/modes/orchestrator/session-guard.md`
   - relevant plan/worklog files
@@ -98,6 +103,7 @@ This is a context-control system, not a hidden automation layer.
   - host wrapper stability
   - debug log correlation
   - snapshot and patch flow
+  - checkpoint, replay, and retry boundaries
   - version naming rules
   - handoff clarity between stages
   - pipeline-safe file/output naming
@@ -109,6 +115,8 @@ This is a context-control system, not a hidden automation layer.
 - Read first:
   - `docs/modes/harness/harness-guide.md`
   - `docs/modes/harness/harness-scenario-rules.md`
+  - `docs/modes/harness/harness-observability-rules.md`
+  - `docs/modes/harness/fixture-isolation-rules.md`
   - `docs/modes/harness/stale-snapshot-harness-template.md`
   - `templates/harness-spec.md`
   - relevant plan/worklog files
@@ -116,6 +124,8 @@ This is a context-control system, not a hidden automation layer.
   - harness level choice
   - scenario naming rules
   - assertion clarity
+  - fixture isolation
+  - captured evidence and observability
   - failure output readability
   - repeatable validation loops
 

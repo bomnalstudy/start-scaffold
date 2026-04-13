@@ -10,13 +10,23 @@
       "type": "string",
       "owner": "main-orchestrator",
       "required": true,
-      "mutable": false
+      "mutable": false,
+      "allowedWriters": [
+        "main-orchestrator"
+      ],
+      "writeMode": "immutable",
+      "conflictPolicy": "reject"
     },
     "hostTarget": {
       "type": "string",
       "owner": "main-orchestrator",
       "required": true,
       "mutable": true,
+      "allowedWriters": [
+        "main-orchestrator"
+      ],
+      "writeMode": "replace",
+      "conflictPolicy": "reject",
       "allowedValues": [
         "codex",
         "claude",
@@ -27,26 +37,47 @@
       "type": "object",
       "owner": "main-orchestrator",
       "required": true,
-      "mutable": true
+      "mutable": true,
+      "allowedWriters": [
+        "main-orchestrator"
+      ],
+      "writeMode": "replace",
+      "conflictPolicy": "reject"
     },
     "stageStatus": {
       "type": "object",
       "owner": "main-orchestrator",
       "required": true,
-      "mutable": true
+      "mutable": true,
+      "allowedWriters": [
+        "main-orchestrator"
+      ],
+      "writeMode": "replace",
+      "conflictPolicy": "reject"
     },
     "artifactVersion": {
       "type": "string",
       "owner": "main-orchestrator",
       "required": true,
-      "mutable": true
+      "mutable": true,
+      "allowedWriters": [
+        "main-orchestrator"
+      ],
+      "writeMode": "replace",
+      "conflictPolicy": "reject"
     },
     "workerOutputs": {
       "type": "object",
       "owner": "worker-orchestrators",
       "required": false,
       "mutable": true,
-      "writeMode": "namespaced-patch"
+      "allowedWriters": [
+        "prompt-orchestrator",
+        "secure-orchestrator",
+        "performance-orchestrator"
+      ],
+      "writeMode": "namespaced-patch",
+      "conflictPolicy": "namespace-owner"
     }
   },
   "patchRules": {

@@ -37,11 +37,25 @@ Use this rule set for shared values, references, and state handoff between orche
 ## Required Rules
 
 - Shared values must be registered in the central state contract before use.
+- Every shared value must declare its policy fields, not just its type.
 - Workers must read from a snapshot, not from another worker's private output.
 - Workers must write back patch-shaped updates, not ad hoc full rewrites.
 - If the snapshot version is stale, reread and recompute before commit.
 - If a field has a clear owner, only that owner may directly modify it.
 - Snapshot version and owner should also be present in debug logs for write attempts.
+
+## Policy Fields
+
+Each shared field should declare at least:
+
+- `owner`
+- `mutable`
+- `allowedWriters`
+- `writeMode`
+- `conflictPolicy`
+
+The actual values are project- or flow-specific.
+The scaffold rule is that the policy must be explicit.
 
 ## Write Pattern
 

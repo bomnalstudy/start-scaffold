@@ -45,6 +45,50 @@ function New-Finding {
     }
 }
 
+function Test-LineLevelSensitiveLogSignal {
+    param(
+        [string]$Content,
+        [string]$LogPattern,
+        [string]$SensitivePattern
+    )
+
+    $lines = $Content -split "`r?`n"
+    foreach ($line in $lines) {
+        if ($line -match $LogPattern -and $line -match $SensitivePattern) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function Test-PowerShellSensitiveLogSignal {
+    param(
+        [string]$Content
+    )
+
+    $lines = $Content -split "`r?`n"
+    $logPattern = '(?i)Write-Host|Write-Output'
+    $sensitiveVariablePattern = '(?i)\$[{(]?[A-Za-z0-9_]*(token|secret|password|authorization|api[_-]?key|client[_-]?secret|passphrase)[A-Za-z0-9_]*'
+    $safeSuffixPattern = '(?i)(Path|Dir|File|Profile)'
+
+    foreach ($line in $lines) {
+        if ($line -notmatch $logPattern) {
+            continue
+        }
+
+        if ($line -match $sensitiveVariablePattern) {
+            if ($line -match $safeSuffixPattern) {
+                continue
+            }
+
+            return $true
+        }
+    }
+
+    return $false
+}
+
 $rootPath = (Resolve-Path -LiteralPath $Root).Path
 $findings = @()
 $temporaryFileAllowlist = @(
@@ -124,6 +168,26 @@ foreach ($file in $files) {
         if ($hasJsxLikeMarkup -and $hasHeavyState -and $lineCount -gt 200) {
             $findings += (New-Finding -Rule "ui-state-mix" -Severity "warn" -Path $relativePath -Message "Large UI file appears to mix rendering and state orchestration. Consider splitting into view and hook/state files.")
         }
+
+        $hasSensitiveTerms = ($content -match '(?i)token|secret|password|authorization|api[_-]?key|client[_-]?secret')
+        $hasBrowserStorage = ($content -match '(?i)localStorage\.(setItem|getItem)|sessionStorage\.(setItem|getItem)')
+        $hasUnsafeHtmlSink = ($content -match 'dangerouslySetInnerHTML' -or $content -match 'innerHTML\s*=')
+        $hasSensitiveLogSignal = Test-LineLevelSensitiveLogSignal `
+            -Content $content `
+            -LogPattern '(?i)console\.(log|debug|info|warn|error)\(|logger\.(debug|info|warn|error)\(' `
+            -SensitivePattern '(?i)(token|secret|password|authorization|api[_-]?key|client[_-]?secret)[A-Za-z0-9._\-\]\[]*'
+
+        if ($hasSensitiveTerms -and $hasBrowserStorage) {
+            $findings += (New-Finding -Rule "browser-token-storage" -Severity "warn" -Path $relativePath -Message "Sensitive/auth-related values appear near browser storage usage. Confirm this storage pattern is truly necessary and safe.")
+        }
+
+        if ($hasUnsafeHtmlSink) {
+            $findings += (New-Finding -Rule "unsafe-html-sink" -Severity "warn" -Path $relativePath -Message "Unsafe HTML sink detected. Confirm explicit sanitization and trusted content boundaries.")
+        }
+
+        if ($hasSensitiveLogSignal) {
+            $findings += (New-Finding -Rule "sensitive-log-signal" -Severity "warn" -Path $relativePath -Message "Sensitive/auth-related terms appear in a file that also logs values. Review for raw secret or token leakage in logs.")
+        }
     }
 
     if ($relativePath -match '(^|\\)utils(\\|/)?index\.(ts|tsx|js|jsx)$') {
@@ -141,6 +205,11 @@ foreach ($file in $files) {
         }
         if ($hasParamBlock -and $functionCount -ge 6 -and $content -match 'Write-Host' -and $lineCount -gt 180) {
             $findings += (New-Finding -Rule "script-flow-mix" -Severity "warn" -Path $relativePath -Message "Script appears to mix entrypoint flow, reporting, and helper logic in one file. Consider separating reusable logic.")
+        }
+
+        $hasSensitiveLogSignal = Test-PowerShellSensitiveLogSignal -Content $content
+        if ($hasSensitiveLogSignal) {
+            $findings += (New-Finding -Rule "sensitive-log-signal" -Severity "warn" -Path $relativePath -Message "Sensitive terms appear in a script that also prints output. Confirm that raw secret values are not echoed to the console.")
         }
     }
 

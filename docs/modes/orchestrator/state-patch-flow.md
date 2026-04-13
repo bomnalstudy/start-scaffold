@@ -31,6 +31,9 @@ Patch changes use dotted paths:
 
 ## Validation Rules
 
+- reject if a patch key does not map to a declared shared field policy
+- reject if a field is immutable
+- reject if the current writer is not allowed for the field
 - reject if `snapshotVersion` is stale
 - reject if patch keys are outside the owner's allowed prefixes
 - bump `snapshotVersion` after a successful apply

@@ -153,3 +153,46 @@ function Test-AllowedPatchKey {
 
     return $false
 }
+
+function Get-TopLevelSharedKey {
+    param(
+        [Parameter(Mandatory)]
+        [string]$PatchPath
+    )
+
+    return $PatchPath.Split(".")[0]
+}
+
+function Get-FieldPolicy {
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$Contract,
+        [Parameter(Mandatory)]
+        [string]$PatchPath
+    )
+
+    $topLevelKey = Get-TopLevelSharedKey -PatchPath $PatchPath
+    if (-not $Contract.ContainsKey("sharedValues")) {
+        return $null
+    }
+
+    if (-not $Contract.sharedValues.ContainsKey($topLevelKey)) {
+        return $null
+    }
+
+    return $Contract.sharedValues[$topLevelKey]
+}
+
+function Test-WriterAllowed {
+    param(
+        [hashtable]$FieldPolicy,
+        [string]$Owner
+    )
+
+    if (-not $FieldPolicy.ContainsKey("allowedWriters")) {
+        return $false
+    }
+
+    $writers = @($FieldPolicy.allowedWriters)
+    return ($writers -contains $Owner)
+}

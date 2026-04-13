@@ -14,9 +14,10 @@ Read first:
 5. `docs/modes/orchestrator/version-naming-rules.md`
 6. `docs/modes/orchestrator/structured-debug-logging-rule.md`
 7. `docs/modes/orchestrator/state-patch-flow.md`
-8. `docs/modes/orchestrator/orchestration-patterns.md`
-9. `docs/modes/orchestrator/session-guard.md`
-10. the current task plan and worklog
+8. `docs/modes/orchestrator/reliability-patterns.md`
+9. `docs/modes/orchestrator/orchestration-patterns.md`
+10. `docs/modes/orchestrator/session-guard.md`
+11. the current task plan and worklog
 
 Focus on:
 
@@ -25,6 +26,7 @@ Focus on:
 - host wrapper stability
 - debug log correlation
 - snapshot and patch flow
+- checkpoint, replay, and retry boundaries
 - folder and responsibility boundaries
 - stage handoff clarity
 - pipeline-safe artifact naming

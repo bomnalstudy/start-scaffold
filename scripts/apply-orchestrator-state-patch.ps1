@@ -104,6 +104,61 @@ if (@($allowedPrefixes).Count -eq 0) {
 }
 
 foreach ($patchKey in $patchKeys) {
+    $fieldPolicy = Get-FieldPolicy -Contract $contract -PatchPath $patchKey
+    if ($null -eq $fieldPolicy) {
+        Add-StateDebugEntry -Status "rejected-unknown-field-policy" -Message "Patch rejected because the target field is not declared in the state contract." -ErrorCode "unknown_field_policy" -PatchKeys $patchKeys
+
+        [ordered]@{
+            success = $false
+            status = "rejected-unknown-field-policy"
+            runId = $runId
+            owner = $Owner
+            patchKey = $patchKey
+            error = @{
+                code = "unknown_field_policy"
+                message = "Patch key '$patchKey' does not map to a declared shared field policy."
+            }
+        } | ConvertTo-Json -Depth 10
+
+        exit 1
+    }
+
+    if (-not [bool]$fieldPolicy.mutable) {
+        Add-StateDebugEntry -Status "rejected-immutable-field" -Message "Patch rejected because the target field is immutable." -ErrorCode "immutable_field" -PatchKeys $patchKeys
+
+        [ordered]@{
+            success = $false
+            status = "rejected-immutable-field"
+            runId = $runId
+            owner = $Owner
+            patchKey = $patchKey
+            error = @{
+                code = "immutable_field"
+                message = "Patch key '$patchKey' targets an immutable shared field."
+            }
+        } | ConvertTo-Json -Depth 10
+
+        exit 1
+    }
+
+    if (-not (Test-WriterAllowed -FieldPolicy $fieldPolicy -Owner $Owner)) {
+        Add-StateDebugEntry -Status "rejected-writer-policy" -Message "Patch rejected because the writer is not allowed for the target field." -ErrorCode "writer_not_allowed" -PatchKeys $patchKeys
+
+        [ordered]@{
+            success = $false
+            status = "rejected-writer-policy"
+            runId = $runId
+            owner = $Owner
+            patchKey = $patchKey
+            error = @{
+                code = "writer_not_allowed"
+                message = "Owner '$Owner' is not allowed to write patch key '$patchKey'."
+            }
+        } | ConvertTo-Json -Depth 10
+
+        exit 1
+    }
+
     if (-not (Test-AllowedPatchKey -AllowedPrefixes $allowedPrefixes -PatchPath $patchKey)) {
         Add-StateDebugEntry -Status "rejected-owner-scope" -Message "Patch rejected because it writes outside the owner's allowed namespace." -ErrorCode "owner_scope_violation" -PatchKeys $patchKeys
 
