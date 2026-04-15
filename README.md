@@ -117,6 +117,9 @@ Linux/WSL native 예시:
 
 ### 작업 모드
 
+- `add-mode`
+  - 스캐폴드 커스터마이즈 전용
+  - 사용자가 앞으로 계속 지켜야 할 규칙, 선호, 작업 방식을 말했을 때 어떤 docs/skills/metadata/worklog를 바꿔야 할지 정할 때 사용
 - `ux-ui-mode`
   - UX/UI 작업 전용
   - 화면 마무리, 정보 위계, 가독성, quality guard 선택이 필요할 때 사용
@@ -179,6 +182,7 @@ Linux/WSL native 예시:
 |-- docs/
 |   |-- modes/
 |   |   |-- ux-ui/
+|   |   |-- add/
 |   |   |-- secure/
 |   |   |-- optimize/
 |   |   |-- db/

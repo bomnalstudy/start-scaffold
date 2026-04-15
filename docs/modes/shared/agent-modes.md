@@ -10,6 +10,7 @@ The goal is to narrow context on demand so the agent reads only the most relevan
 - Mode names use the format `*-mode`.
 - Keep names short, domain-based, and easy to call in chat.
 - Current standard modes:
+  - `add-mode`
   - `ux-ui-mode`
   - `secure-mode`
   - `optimize-mode`
@@ -31,6 +32,23 @@ When a mode is active, the agent should:
 This is a context-control system, not a hidden automation layer.
 
 ## Mode Definitions
+
+### `add-mode`
+
+- Purpose: customize the scaffold so a user's durable workflow, rule, or preference becomes a reusable repository behavior.
+- Read first:
+  - `AGENTS.md`
+  - `docs/modes/add/add-mode-guide.md`
+  - `docs/modes/add/requirement-routing-rules.md`
+  - `docs/modes/shared/agent-skills.md`
+  - relevant plan/worklog files
+- Focus on:
+  - durable requirements versus one-off requests
+  - repo-owned versus host-owned boundaries
+  - choosing the right layer such as `AGENTS.md`, shared docs, mode docs, skill files, metadata, templates, or worklogs
+  - additive customization instead of broad rewrites
+- Avoid loading first:
+  - unrelated domain docs unless the requirement clearly belongs to that mode
 
 ### `ux-ui-mode`
 
@@ -214,6 +232,7 @@ This is a context-control system, not a hidden automation layer.
 Use short mode language in chat, for example:
 
 - `use ux-ui-mode for this`
+- `use add-mode for this`
 - `use ux/ui-mode for this`
 - `switch to secure-mode`
 - `use code-refactor-mode for this`
@@ -231,4 +250,4 @@ Then the agent should narrow context before implementation.
 - Connect this mode system to `docs/context-routing.md` and future skill wrappers.
 - Prefer one active mode at a time for MVP tasks.
 - If two modes are both needed, state the primary mode and only borrow the smallest necessary rules from the secondary mode.
-- Repo-local skill entry points live under `skills/ux-ui-mode`, `skills/secure-mode`, `skills/optimize-mode`, `skills/db-mode`, `skills/code-refactor-mode`, `skills/orchestrator-mode`, `skills/harness-mode`, and `skills/failure-pattern-mode`.
+- Repo-local skill entry points live under `skills/add-mode`, `skills/ux-ui-mode`, `skills/secure-mode`, `skills/optimize-mode`, `skills/db-mode`, `skills/code-refactor-mode`, `skills/orchestrator-mode`, `skills/harness-mode`, and `skills/failure-pattern-mode`.

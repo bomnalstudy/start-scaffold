@@ -12,6 +12,7 @@ This folder groups repository docs by the skill or mode that uses them most dire
 ## Current Structure
 
 - `docs/modes/ux-ui/`: UX/UI mode docs
+- `docs/modes/add/`: scaffold customization mode docs
 - `docs/modes/secure/`: security mode docs
 - `docs/modes/optimize/`: optimization mode docs
 - `docs/modes/db/`: database and API contract mode docs

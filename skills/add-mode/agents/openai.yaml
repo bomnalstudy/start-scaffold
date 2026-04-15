@@ -1,0 +1,4 @@
+interface:
+  display_name: "Add Mode"
+  short_description: "Customize the scaffold for persistent user rules"
+  default_prompt: "Use add-mode to turn the user's durable workflow or rule requests into the right repo-local doc, skill, metadata, or template updates without overbuilding automation."
