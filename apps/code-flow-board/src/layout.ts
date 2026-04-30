@@ -55,8 +55,9 @@ function toBoardNode(data: CodeFlowData, node: InferredFlowNode): BoardNode {
     description: node.summary
       ? {
           summary: node.summary,
-          responsibilities: node.evidence?.slice(0, 4) ?? [],
+          responsibilities: node.responsibilities?.slice(0, 4) ?? [],
           relationships: [],
+          terms: node.terms?.slice(0, 5) ?? [],
           confidence: data.flowSource === "local-ai" ? "medium" : "low",
           analysisSource: data.flowSource,
         }

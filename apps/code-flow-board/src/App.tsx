@@ -6,6 +6,7 @@ import { shapePath } from "./nodeShape";
 import type { BoardNode, Role } from "./types";
 import { useCanvasView } from "./useCanvasView";
 import { useCodeFlow } from "./useCodeFlow";
+import { useGraphBounds } from "./useGraphBounds";
 import { useNodeDrag } from "./useNodeDrag";
 
 type LayoutState = Awaited<ReturnType<typeof layoutFlow>>;
@@ -26,9 +27,9 @@ function App() {
   const [role, setRole] = useState("");
   const [selected, setSelected] = useState("project");
   const { t, role: roleLabel } = useMemo(() => createTranslator(language), [language]);
-  const { data, error } = useCodeFlow(t("error"));
+  const { data, error } = useCodeFlow(t("error"), language);
   const canvas = useCanvasView();
-  const nodeDrag = useNodeDrag(canvas.view.scale, setLayout, setSelected);
+  const nodeDrag = useNodeDrag(setLayout, setSelected);
 
   useEffect(() => {
     if (!data) return;
@@ -55,8 +56,7 @@ function App() {
   const refLevel = Math.min(5, Math.max(1, Math.ceil((inbound + outbound) / 3)));
   const summary = selectedNode?.description?.summary ?? roleSummary(selectedNode?.role ?? "domain", language);
   const sourceLabel = selectedNode?.description?.analysisSource === "local-ai" ? "Local AI" : "";
-  const maxX = layout ? Math.max(...layout.nodes.map((node) => node.x + node.width)) + 140 : 900;
-  const maxY = layout ? Math.max(...layout.nodes.map((node) => node.y + node.height)) + 140 : 620;
+  const graphBounds = useGraphBounds(layout?.nodes);
 
   return (
     <main className="mapShell">
@@ -102,7 +102,7 @@ function App() {
         >
           {(error || layoutError) && <p className="error">{error || layoutError}</p>}
           <div className="canvasContent" style={canvas.canvasVars}>
-            <svg viewBox={`0 0 ${maxX} ${maxY}`} role="img" aria-label="Code flow graph">
+            <svg viewBox={`${graphBounds.minX} ${graphBounds.minY} ${graphBounds.width} ${graphBounds.height}`} role="img" aria-label="Code flow graph">
               <defs>
                 <marker id="arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
                   <path d="M 0 0 L 8 4 L 0 8 z" />
@@ -160,6 +160,12 @@ function App() {
               <>
                 <h4>{t("responsibilities")}</h4>
                 <ul>{selectedNode.description.responsibilities.map((item) => <li key={item}>{item}</li>)}</ul>
+              </>
+            ) : null}
+            {selectedNode.description?.terms?.length ? (
+              <>
+                <h4>{t("terms")}</h4>
+                <ul>{selectedNode.description.terms.map((item) => <li key={item}>{item}</li>)}</ul>
               </>
             ) : null}
             <section className="insightCard">

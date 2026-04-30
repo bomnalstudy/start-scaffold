@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import os
 import subprocess
 import tempfile
 from pathlib import Path
@@ -44,6 +45,55 @@ def run_ai(command: str, prompt: str, timeout: int) -> dict:
 
 def chunked(items: list[dict], size: int) -> list[list[dict]]:
     return [items[index : index + size] for index in range(0, len(items), size)]
+
+
+def compact_batch(batch: dict) -> dict:
+    return {
+        "batch": batch.get("batch"),
+        "componentNames": batch.get("componentNames", [])[:4],
+        "candidates": batch.get("candidates", [])[:5],
+        "handoffs": batch.get("handoffs", [])[:6],
+    }
+
+
+def compact_flow(flow: dict | None) -> dict:
+    if not flow:
+        return {"flows": []}
+    compacted = []
+    for item in flow.get("flows", [])[:2]:
+        compacted.append(
+            {
+                "id": item.get("id", "main"),
+                "name": item.get("name", ""),
+                "summary": item.get("summary", ""),
+                "nodes": item.get("nodes", [])[:14],
+                "edges": item.get("edges", [])[:20],
+            }
+        )
+    return {"flows": compacted}
+
+
+def clear_stale_lock(lock_path: Path) -> None:
+    if not lock_path.exists():
+        return
+    pid_text = lock_path.read_text(encoding="utf-8", errors="ignore").strip()
+    if not pid_text.isdigit() or not process_exists(int(pid_text)):
+        lock_path.unlink(missing_ok=True)
+
+
+def process_exists(pid: int) -> bool:
+    if os.name == "nt":
+        result = subprocess.run(
+            ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+            capture_output=True,
+            text=True,
+        )
+        return str(pid) in result.stdout
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
 
 
 def save_batch(work_dir: Path, index: int, data: dict) -> None:

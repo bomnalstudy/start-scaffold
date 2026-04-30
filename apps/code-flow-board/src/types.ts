@@ -26,6 +26,7 @@ export type FlowDescription = {
   summary: string;
   responsibilities: string[];
   relationships: string[];
+  terms?: string[];
   confidence?: string;
   analysisSource?: "local-ai";
 };
@@ -42,6 +43,8 @@ export type InferredFlowNode = {
   label: string;
   role: Role | "project";
   summary?: string;
+  responsibilities?: string[];
+  terms?: string[];
   files?: string[];
   evidence?: string[];
 };
@@ -73,6 +76,7 @@ export type CodeFlowData = {
   flows?: InferredFlow[];
   flowSource?: "local-ai";
   flowGeneratedAt?: string;
+  flowLanguage?: "ko" | "en" | string;
 };
 
 export type BoardNode = {

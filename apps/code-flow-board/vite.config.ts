@@ -45,7 +45,11 @@ function runAnalyzer() {
   });
 }
 
-function runFlowInference() {
+function normalizedLanguage(value: string | undefined) {
+  return value === "en" ? "en" : "ko";
+}
+
+function runFlowInference(language = flowLanguage) {
   if (!aiCommand) return Promise.reject(new Error("CODE_FLOW_AI_COMMAND is required for AI flow inference."));
   return new Promise<void>((resolve, reject) => {
     const python = process.platform === "win32" ? "python" : "python3";
@@ -54,7 +58,7 @@ function runFlowInference() {
       "--root",
       targetRoot,
       "--language",
-      flowLanguage,
+      normalizedLanguage(language),
       "--max-components",
       flowMax,
       "--max-files-per-component",
@@ -70,22 +74,40 @@ function runFlowInference() {
   });
 }
 
-async function refreshFlow() {
+async function refreshFlow(language = flowLanguage) {
   await runAnalyzer();
-  await runFlowInference();
+  await runFlowInference(language);
 }
 
-async function readFlowData() {
-  const content = await readFile(dataPath, "utf8");
-  const parsed = JSON.parse(content) as { flows?: unknown[] };
+async function readFlowData(language = flowLanguage) {
+  const content = stripBom(await readFile(dataPath, "utf8"));
+  const parsed = JSON.parse(content) as { flows?: unknown[]; flowLanguage?: string };
   if (!parsed.flows?.length) {
     try {
-      return await readFile(memoryPath, "utf8");
+      const memory = stripBom(await readFile(memoryPath, "utf8"));
+      const memoryData = JSON.parse(memory) as { flows?: unknown[]; flowLanguage?: string };
+      const sameLanguage = memoryData.flowLanguage === normalizedLanguage(language);
+      return memoryData.flows?.length && sameLanguage ? memory : content;
     } catch {
       return content;
     }
   }
   return content;
+}
+
+function stripBom(content: string) {
+  return content.charCodeAt(0) === 0xfeff ? content.slice(1) : content;
+}
+
+function hasPlainDescriptions(flowData: { flows?: Array<{ nodes?: Array<{ responsibilities?: unknown[]; terms?: unknown[] }> }> }) {
+  return flowData.flows?.some((flow) =>
+    flow.nodes?.some((node) => Array.isArray(node.responsibilities) && node.responsibilities.length)
+  ) ?? false;
+}
+
+async function flowNeedsRefresh(content: string, language: string) {
+  const parsed = JSON.parse(content) as { flows?: Array<{ nodes?: Array<{ responsibilities?: unknown[]; terms?: unknown[] }> }>; flowLanguage?: string };
+  return !parsed.flows?.length || parsed.flowLanguage !== normalizedLanguage(language) || !hasPlainDescriptions(parsed);
 }
 
 function flowBoardPlugin() {
@@ -94,14 +116,35 @@ function flowBoardPlugin() {
     configureServer(server: ViteDevServer) {
       const clients = new Set<import("node:http").ServerResponse>();
       let timer: NodeJS.Timeout | undefined;
+      let activeLanguage = normalizedLanguage(flowLanguage);
+      let refreshRunning = false;
+
+      const requestRefresh = async (language = activeLanguage) => {
+        if (refreshRunning) return;
+        refreshRunning = true;
+        try {
+          await refreshFlow(language);
+          clients.forEach((client) => client.write(`event: flow-update\ndata: ${Date.now()}\n\n`));
+        } catch (error) {
+          console.error(error);
+        } finally {
+          refreshRunning = false;
+        }
+      };
 
       server.watcher.add(targetRoot);
-      server.middlewares.use("/api/code-flow", async (_req, res) => {
+      server.middlewares.use("/api/code-flow", async (req, res) => {
         try {
+          const url = new URL(req.url ?? "", "http://127.0.0.1");
+          activeLanguage = normalizedLanguage(url.searchParams.get("lang") ?? activeLanguage);
           res.setHeader("Content-Type", "application/json; charset=utf-8");
-          res.end(await readFlowData());
+          const content = await readFlowData(activeLanguage);
+          res.end(content);
+          if (await flowNeedsRefresh(content, activeLanguage)) {
+            void requestRefresh(activeLanguage).catch((error) => console.error(error));
+          }
         } catch {
-          await refreshFlow();
+          void requestRefresh(activeLanguage);
           res.end(await readFile(dataPath, "utf8"));
         }
       });
@@ -122,8 +165,7 @@ function flowBoardPlugin() {
         clearTimeout(timer);
         timer = setTimeout(async () => {
           try {
-            await refreshFlow();
-            clients.forEach((client) => client.write(`event: flow-update\ndata: ${Date.now()}\n\n`));
+            await requestRefresh(activeLanguage);
           } catch (error) {
             console.error(error);
           }

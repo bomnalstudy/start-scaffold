@@ -65,6 +65,16 @@ Users need to keep the flowchart open while vibe-coding. A static HTML file requ
 - Reaffirmed Markdown files as supporting work context only; `.md` files should be lower priority than executable/source files and should not decide the main result flow.
 - Changed AI flow candidate ordering so result-impacting product code is analyzed first: `apps/**/src`, product roles, then config/automation/checks, with docs/worklogs/Markdown last or excluded from runtime flow inference.
 - Excluded one-off script paths from runtime flow inference when their names indicate cleanup, migration, seed, backfill, rerun, temporary, or similar single-use maintenance work.
+- Connected the board language selector to `/api/code-flow?lang=...` so live-watch AI summaries and flow labels are regenerated in the active UI language.
+- Added `flowLanguage` metadata to generated flow JSON so the server can detect stale-language summaries and refresh them in the background.
+- Fixed node drag feel by converting pointer movement into SVG coordinates instead of mixing browser pixels with transformed canvas coordinates.
+- Expanded the SVG viewBox around graph bounds so nodes dragged beyond the initial visible area do not disappear at the canvas edge.
+- Added stale `infer.lock` recovery so failed AI flow generation does not permanently block future live-watch refreshes.
+- Restricted flow memory fallback to the active board language, so stale Korean/English summaries are not shown under the wrong language selection.
+- Changed AI flow node output to separate plain-language responsibilities and glossary terms from code evidence.
+- Changed the details dock so "doing" text comes from AI-written responsibilities, while function names, SQL, and table names stay in the evidence section.
+- Added refresh detection for old AI flow JSON that lacks plain-language responsibilities, so stale cache is regenerated in the active language.
+- Fixed a Python name collision in the sequential merge step that blocked the first AI batch from being saved.
 
 ## Remaining Risk
 
@@ -73,3 +83,4 @@ Users need to keep the flowchart open while vibe-coding. A static HTML file requ
 - Alias imports and runtime-only links may still require a richer resolver to show every workflow edge.
 - AI-generated flowcharts depend on the user's local CLI auth, budget, command format, and the quality of selected file excerpts.
 - Each merge step still depends on local AI output quality; batch and merge files make failed or weak runs easier to inspect and retry.
+- Existing saved flow memory may remain partial until the sequential local-AI batches finish across the target project.

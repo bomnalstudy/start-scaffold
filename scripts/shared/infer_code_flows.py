@@ -5,7 +5,7 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ai_flow_io import chunked, run_ai, save_batch, save_merge, save_prompt
+from ai_flow_io import chunked, clear_stale_lock, compact_batch as compact_batch_result, compact_flow, run_ai, save_batch, save_merge, save_prompt
 
 
 SUPPORTING_ROLES = {"docs", "skill"}
@@ -25,7 +25,7 @@ ONE_OFF_MARKERS = {
 
 
 def read_json(path: Path) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
+    return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
 def write_flow(flow_path: Path, flow: dict) -> None:
@@ -47,7 +47,7 @@ def load_memory(flow_path: Path) -> dict | None:
     memory_path = memory_path_for(flow_path)
     if not memory_path.exists():
         return None
-    return json.loads(memory_path.read_text(encoding="utf-8"))
+    return json.loads(memory_path.read_text(encoding="utf-8-sig"))
 
 
 def write_memory(flow_path: Path, flow: dict) -> None:
@@ -60,6 +60,7 @@ def write_memory(flow_path: Path, flow: dict) -> None:
 def acquire_lock(work_dir: Path) -> Path:
     work_dir.mkdir(parents=True, exist_ok=True)
     lock_path = work_dir / "infer.lock"
+    clear_stale_lock(lock_path)
     try:
         handle = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
     except FileExistsError as error:
@@ -213,6 +214,8 @@ Rules:
 - Return at most 3 candidate nodes for this batch.
 - If this batch does not show a runtime step, return an empty candidates array.
 - Include files and evidence for every candidate node.
+- Write summary and responsibilities for a non-programmer. Do not use function names, SQL, table names, or file paths there unless you explain what they mean.
+- Put code identifiers only in evidence. If you must use a technical term such as heartbeat, job, queue, table, API, or database, add a terms item that explains it simply.
 
 Return this exact JSON shape:
 {{
@@ -223,7 +226,9 @@ Return this exact JSON shape:
       "type": "start|process|decision|io|data|subprocess|document|end",
       "label": "short box label",
       "role": "entrypoint|ui|backend|security|orchestration|service|domain|repository|database|automation|verification|config|project",
-      "summary": "what this exact step appears to do",
+      "summary": "what this exact step appears to do, explained for a non-programmer",
+      "responsibilities": ["plain-language thing this step does for the product or operator"],
+      "terms": ["technical term: simple meaning in this project"],
       "files": ["relative/path.ts"],
       "evidence": ["specific filename, function, route, command, import, or text evidence"]
     }}
@@ -250,8 +255,8 @@ Code evidence in this batch:
 
 
 def build_merge_prompt(flow: dict, language: str, current_flow: dict | None, next_batch: dict) -> str:
-    compact_current = json.dumps(current_flow or {"flows": []}, ensure_ascii=False, indent=2)
-    compact_batch = json.dumps(next_batch, ensure_ascii=False, indent=2)
+    compact_current = json.dumps(compact_flow(current_flow), ensure_ascii=False, indent=2)
+    compact_next_batch = json.dumps(compact_batch_result(next_batch), ensure_ascii=False, indent=2)
     return f"""
 You are incrementally assembling a true flowchart from one batch at a time.
 
@@ -274,6 +279,9 @@ Rules:
 - Keep good existing nodes from the current flow.
 - Add, replace, or connect nodes only when the next batch gives concrete evidence.
 - This is an intermediate result, so it can be incomplete, but it must remain valid JSON.
+- Write node summaries and responsibilities for a non-programmer who does not know code.
+- Do not put function names, SQL, table names, or file paths in summary/responsibilities. Put those in evidence.
+- If a technical term is useful, keep it only when terms explains it in simple language.
 
 Return this exact JSON shape:
 {{
@@ -289,6 +297,8 @@ Return this exact JSON shape:
           "label": "short box label",
           "role": "entrypoint|ui|backend|security|orchestration|service|domain|repository|database|automation|verification|config|project",
           "summary": "what this exact step does, in plain language",
+          "responsibilities": ["plain-language thing this step does for the product or operator"],
+          "terms": ["technical term: simple meaning in this project"],
           "files": ["relative/path.ts"],
           "evidence": ["concrete evidence from batch results"]
         }}
@@ -312,7 +322,7 @@ Current flow so far:
 {compact_current}
 
 Next batch result:
-{compact_batch}
+{compact_next_batch}
 """.strip()
 
 
@@ -321,6 +331,7 @@ def write_partial_flow(flow_path: Path, base_flow: dict, raw_flow: dict) -> None
     partial["flows"] = normalize_flow(raw_flow)
     partial["flowSource"] = "local-ai"
     partial["flowGeneratedAt"] = datetime.now(timezone.utc).isoformat()
+    partial["flowLanguage"] = base_flow.get("flowLanguage", "ko")
     write_flow(flow_path, partial)
     write_memory(flow_path, partial)
 
@@ -377,6 +388,8 @@ def normalize_flow(raw: dict) -> list[dict]:
                     "label": str(node.get("label") or node_id).strip()[:80],
                     "role": role,
                     "summary": str(node.get("summary", "")).strip()[:500],
+                    "responsibilities": [str(text).strip()[:220] for text in node.get("responsibilities", [])[:5] if str(text).strip()],
+                    "terms": [str(text).strip()[:220] for text in node.get("terms", [])[:6] if str(text).strip()],
                     "files": [str(path).strip() for path in node.get("files", [])[:8] if str(path).strip()],
                     "evidence": [str(text).strip()[:240] for text in node.get("evidence", [])[:5] if str(text).strip()],
                 }
@@ -424,6 +437,7 @@ def main() -> int:
     root = Path(args.root).resolve()
     flow_path = (root / args.flow_path).resolve()
     flow = read_json(flow_path)
+    flow["flowLanguage"] = args.language
     components = attach_component_files(
         flow,
         selected_components(flow, args.max_components),
@@ -450,6 +464,7 @@ def main() -> int:
     flow["flows"] = normalize_flow(raw)
     flow["flowSource"] = "local-ai"
     flow["flowGeneratedAt"] = datetime.now(timezone.utc).isoformat()
+    flow["flowLanguage"] = args.language
     write_flow(flow_path, flow)
     write_memory(flow_path, flow)
 

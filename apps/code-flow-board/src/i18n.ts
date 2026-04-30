@@ -7,7 +7,7 @@ type TextKey =
   | "flow" | "details" | "generated" | "filesScanned" | "components" | "references"
   | "summary" | "files" | "localRefs" | "incoming" | "outgoing" | "live" | "loading" | "error"
   | "workspace" | "map" | "favorites" | "pureChaos" | "responsibilities" | "relationships"
-  | "evidence" | "workflow";
+  | "terms" | "evidence" | "workflow";
 
 const ko = {
   title: "\ucf54\ub4dc \ud50c\ub85c\uc6b0 \ub9f5",
@@ -37,6 +37,7 @@ const ko = {
   pureChaos: "\uc804\uccb4 \uad6c\uc870",
   responsibilities: "\ud558\ub294 \uc77c",
   relationships: "\uad00\uacc4 \uc124\uba85",
+  terms: "\uc6a9\uc5b4 \ud480\uc774",
   evidence: "\uadfc\uac70",
   workflow: "\uc791\ub3d9 \ud750\ub984",
   roleNames: {
@@ -86,6 +87,7 @@ const en = {
   pureChaos: "Full structure",
   responsibilities: "Responsibilities",
   relationships: "Relationships",
+  terms: "Terms",
   evidence: "Evidence",
   workflow: "Workflow",
   roleNames: {
