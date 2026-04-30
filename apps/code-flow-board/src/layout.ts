@@ -1,14 +1,15 @@
 import ELK from "elkjs/lib/elk.bundled.js";
-import type { BoardEdge, BoardNode, CodeFlowData, FlowComponent, Role } from "./types";
+import type { BoardEdge, BoardNode, CodeFlowData, Role } from "./types";
 
 const elk = new ELK();
-const nodeWidth = 210;
-const nodeHeight = 64;
+const nodeWidth = 230;
+const nodeHeight = 78;
+const supportingRoles = new Set<Role>(["docs", "skill"]);
 
 function kindFor(role: string): BoardNode["kind"] {
   if (role === "security" || role === "verification") return "decision";
   if (role === "database" || role === "repository") return "data";
-  if (role === "docs") return "document";
+  if (role === "docs" || role === "skill") return "document";
   if (role === "ui") return "io";
   if (role === "orchestration" || role === "service") return "subprocess";
   if (role === "entrypoint") return "start";
@@ -30,14 +31,14 @@ function boundaryNode(id: "__start" | "__end", label: string, kind: "start" | "e
   };
 }
 
-function roleNode(role: Role, fileCount: number): BoardNode {
+function roleNode(role: Role, fileCount: number, sampleFiles: string[]): BoardNode {
   return {
     id: `role:${role}`,
     label: role,
     role,
-    kind: "process",
+    kind: kindFor(role),
     fileCount,
-    sampleFiles: [],
+    sampleFiles,
     x: 0,
     y: 0,
     width: nodeWidth,
@@ -45,79 +46,76 @@ function roleNode(role: Role, fileCount: number): BoardNode {
   };
 }
 
-function nodeFromComponent(component: FlowComponent): BoardNode {
-  return {
-    id: component.name,
-    label: component.name,
-    role: component.primaryRole,
-    kind: kindFor(component.primaryRole),
-    fileCount: component.fileCount,
-    sampleFiles: component.sampleFiles,
-    description: component.description,
-    x: 0,
-    y: 0,
-    width: nodeWidth,
-    height: nodeHeight,
-  };
+function filesByRole(data: CodeFlowData) {
+  const groups = new Map<Role, string[]>();
+  data.files.forEach((file) => {
+    const list = groups.get(file.role) ?? [];
+    if (list.length < 8) list.push(file.path);
+    groups.set(file.role, list);
+  });
+  return groups;
 }
 
-function componentRank(component: FlowComponent, edgeCounts: Map<string, number>) {
-  const connected = edgeCounts.get(component.name) ?? 0;
-  const isAppCode = component.name.startsWith("apps/") ? 1 : 0;
-  const isDocs = component.primaryRole === "docs" ? -1 : 0;
-  return connected * 1000 + isAppCode * 500 + isDocs * 300 + component.fileCount;
+function roleEdges(data: CodeFlowData) {
+  const componentRoles = new Map(data.components.map((item) => [item.name, item.primaryRole]));
+  const counts = new Map<string, number>();
+  data.dependencies.forEach((edge) => {
+    const from = componentRoles.get(edge.from);
+    const to = componentRoles.get(edge.to);
+    if (!from || !to || from === to) return;
+    if (supportingRoles.has(from) || supportingRoles.has(to)) return;
+    const key = `${from}->${to}`;
+    counts.set(key, (counts.get(key) ?? 0) + edge.count);
+  });
+  return [...counts.entries()].map(([key, count], index) => {
+    const [from, to] = key.split("->");
+    return {
+      id: `role-dep-${index}`,
+      sources: [`role:${from}`],
+      targets: [`role:${to}`],
+      count,
+    };
+  });
 }
 
 export async function layoutFlow(data: CodeFlowData, query: string, role: string) {
   const normalizedQuery = query.trim().toLowerCase();
-  const edgeCounts = new Map<string, number>();
-  data.dependencies.forEach((edge) => {
-    edgeCounts.set(edge.from, (edgeCounts.get(edge.from) ?? 0) + edge.count);
-    edgeCounts.set(edge.to, (edgeCounts.get(edge.to) ?? 0) + edge.count);
-  });
-
-  const components = data.components
-    .filter((item) => !role || item.primaryRole === role)
+  const groupedFiles = filesByRole(data);
+  const roles = (Object.keys(data.roles) as Role[])
+    .filter((item) => !supportingRoles.has(item))
+    .filter((item) => !role || item === role)
     .filter((item) => {
       if (!normalizedQuery) return true;
-      return [item.name, item.primaryRole, ...item.sampleFiles].join(" ").toLowerCase().includes(normalizedQuery);
+      const samples = groupedFiles.get(item) ?? [];
+      return [item, ...samples].join(" ").toLowerCase().includes(normalizedQuery);
     })
-    .sort((a, b) => componentRank(b, edgeCounts) - componentRank(a, edgeCounts) || a.name.localeCompare(b.name))
-    .slice(0, 36);
+    .sort((a, b) => data.roles[b] - data.roles[a] || a.localeCompare(b));
 
   const startNode = boundaryNode("__start", "Start", "start");
   const endNode = boundaryNode("__end", "End", "end");
-  const visibleRoles = [...new Set(components.map((item) => item.primaryRole))].sort();
-  const roleNodes = visibleRoles.map((item) => roleNode(item, data.roles[item] ?? 0));
-  const componentNames = new Set(components.map((item) => item.name));
-  const visibleDeps = data.dependencies.filter((edge) => componentNames.has(edge.from) && componentNames.has(edge.to));
-  const outgoing = new Set(visibleDeps.map((edge) => edge.from));
+  const roleNodes = roles.map((item) => roleNode(item, data.roles[item] ?? 0, groupedFiles.get(item) ?? []));
+  const visibleRoleIds = new Set(roleNodes.map((item) => item.id));
+  const internalEdges = roleEdges(data).filter((edge) => visibleRoleIds.has(edge.sources[0]) && visibleRoleIds.has(edge.targets[0]));
+  const outgoing = new Set(internalEdges.map((edge) => edge.sources[0]));
 
   const nodes = [
     { id: startNode.id, width: nodeWidth, height: nodeHeight },
     ...roleNodes.map((item) => ({ id: item.id, width: nodeWidth, height: nodeHeight })),
-    ...components.map((item) => ({ id: item.name, width: nodeWidth, height: nodeHeight })),
     { id: endNode.id, width: nodeWidth, height: nodeHeight },
   ];
   const startEdges = roleNodes.map((item, index) => ({ id: `start-${index}`, sources: [startNode.id], targets: [item.id] }));
-  const roleEdges = components.map((item, index) => ({
-    id: `role-${index}`,
-    sources: [`role:${item.primaryRole}`],
-    targets: [item.name],
-  }));
-  const dependencyEdges = visibleDeps.map((edge, index) => ({ id: `dep-${index}`, sources: [edge.from], targets: [edge.to] }));
-  const endEdges = components
-    .filter((item) => !outgoing.has(item.name))
-    .map((item, index) => ({ id: `end-${index}`, sources: [item.name], targets: [endNode.id] }));
-  const edges = [...startEdges, ...roleEdges, ...dependencyEdges, ...endEdges];
+  const endEdges = roleNodes
+    .filter((item) => !outgoing.has(item.id))
+    .map((item, index) => ({ id: `end-${index}`, sources: [item.id], targets: [endNode.id] }));
+  const edges = [...startEdges, ...internalEdges, ...endEdges];
 
   const graph = await elk.layout({
     id: "root",
     layoutOptions: {
       "elk.algorithm": "layered",
       "elk.direction": "DOWN",
-      "elk.spacing.nodeNode": "55",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "80",
+      "elk.spacing.nodeNode": "70",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "95",
       "elk.edgeRouting": "ORTHOGONAL",
     },
     children: nodes,
@@ -128,7 +126,6 @@ export async function layoutFlow(data: CodeFlowData, query: string, role: string
   nodeMap.set(startNode.id, startNode);
   nodeMap.set(endNode.id, endNode);
   roleNodes.forEach((item) => nodeMap.set(item.id, item));
-  components.forEach((item) => nodeMap.set(item.name, nodeFromComponent(item)));
   graph.children?.forEach((item) => {
     const node = nodeMap.get(item.id);
     if (!node) return;

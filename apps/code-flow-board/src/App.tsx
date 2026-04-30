@@ -4,13 +4,15 @@ import { layoutFlow } from "./layout";
 import type { BoardEdge, BoardNode, Role } from "./types";
 import { useCanvasView } from "./useCanvasView";
 import { useCodeFlow } from "./useCodeFlow";
+import { useNodeDrag } from "./useNodeDrag";
 
 type LayoutState = Awaited<ReturnType<typeof layoutFlow>>;
+const supportingRoles = new Set<Role>(["docs", "skill"]);
 
 const roleIcons: Record<Role | "project", string> = {
   automation: "AU", backend: "BE", config: "CF", database: "DB", domain: "DO",
   docs: "DO", entrypoint: "ST", orchestration: "OR", repository: "RP",
-  security: "SE", service: "SV", ui: "UI", verification: "VE",
+  security: "SE", skill: "SK", service: "SV", ui: "UI", verification: "VE",
   project: "PR",
 };
 
@@ -20,11 +22,8 @@ function pathFor(edge: BoardEdge, nodes: BoardNode[]) {
   if (!from || !to) return "";
   const start = { x: from.x + from.width / 2, y: from.y + from.height };
   const end = { x: to.x + to.width / 2, y: to.y };
-  if (edge.points.length > 0) {
-    return [start, ...edge.points, end].map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
-  }
   const midY = start.y + Math.max(42, (end.y - start.y) / 2);
-  return `M ${start.x} ${start.y} C ${start.x} ${midY}, ${end.x} ${midY}, ${end.x} ${end.y}`;
+  return `M ${start.x} ${start.y} L ${start.x} ${midY} L ${end.x} ${midY} L ${end.x} ${end.y}`;
 }
 
 function shapePath(node: BoardNode) {
@@ -46,6 +45,7 @@ function App() {
   const { t, role: roleLabel } = useMemo(() => createTranslator(language), [language]);
   const { data, error } = useCodeFlow(t("error"));
   const canvas = useCanvasView();
+  const nodeDrag = useNodeDrag(canvas.view.scale, setLayout, setSelected);
 
   useEffect(() => {
     if (!data) return;
@@ -61,11 +61,11 @@ function App() {
   }, [language]);
 
   const selectedNode = layout?.nodes.find((node) => node.id === selected) ?? layout?.nodes[0];
-  const inbound = data?.dependencies.filter((edge) => edge.to === selectedNode?.id).length ?? 0;
-  const outbound = data?.dependencies.filter((edge) => edge.from === selectedNode?.id).length ?? 0;
+  const inbound = layout?.edges.filter((edge) => edge.to === selectedNode?.id).length ?? 0;
+  const outbound = layout?.edges.filter((edge) => edge.from === selectedNode?.id).length ?? 0;
   const refCount = (nodeId: string) => {
-    if (!data) return 0;
-    return data.dependencies.filter((edge) => edge.to === nodeId || edge.from === nodeId).length;
+    if (!layout) return 0;
+    return layout.edges.filter((edge) => edge.to === nodeId || edge.from === nodeId).length;
   };
   const nodeTitle = (node: BoardNode) => node.id.startsWith("role:") ? roleLabel(node.role as Role) : node.label;
   const refLevel = Math.min(5, Math.max(1, Math.ceil((inbound + outbound) / 3)));
@@ -91,7 +91,7 @@ function App() {
         </section>
         <section className="railSection">
           <h2>{t("roles")}</h2>
-          {data && Object.entries(data.roles).map(([item, count]) => (
+          {data && Object.entries(data.roles).filter(([item]) => !supportingRoles.has(item as Role)).map(([item, count]) => (
             <button className={role === item ? "active" : ""} key={item} type="button" onClick={() => setRole(item)}>
               <span>{roleLabel(item as Role)}</span><strong>{count}</strong>
             </button>
@@ -125,7 +125,14 @@ function App() {
               </defs>
               {layout?.edges.map((edge) => <path className={`edge edge-${edge.role}`} d={pathFor(edge, layout.nodes)} key={edge.id} markerEnd="url(#arrow)" />)}
               {layout?.nodes.map((node) => (
-                <g className={`node node-${node.role} ${selectedNode?.id === node.id ? "selected" : ""}`} key={node.id} onClick={() => setSelected(node.id)}>
+                <g
+                  className={`node node-${node.role} ${selectedNode?.id === node.id ? "selected" : ""} ${nodeDrag.draggingId === node.id ? "dragging" : ""}`}
+                  key={node.id}
+                  onClick={() => setSelected(node.id)}
+                  onPointerDown={(event) => nodeDrag.startNodeDrag(event, node)}
+                  onPointerMove={(event) => nodeDrag.moveNode(event, node)}
+                  onPointerUp={nodeDrag.stopNodeDrag}
+                >
                   {shapePath(node)
                     ? <path className="nodeShape" d={shapePath({ ...node, height: node.height + 18 })} />
                     : <rect className="nodeShape" x={node.x} y={node.y} width={node.width} height={node.height + 18} rx={node.kind === "start" ? 24 : 10} />}
@@ -134,7 +141,7 @@ function App() {
                   <text className="nodeIconText" x={node.x + 22} y={node.y + 26}>{roleIcons[node.role]}</text>
                   <text className="nodeTitle" x={node.x + 42} y={node.y + 23}>{nodeTitle(node).slice(0, 24)}</text>
                   <text className="nodeMeta" x={node.x + 42} y={node.y + 43}>{roleLabel(node.role)} / {node.fileCount} {t("files")}</text>
-                  <text className="nodeBadge" x={node.x + 16} y={node.y + 70}>{node.description?.summary.slice(0, 29) ?? `${t("references")}: ${refCount(node.id)}`}</text>
+                  <text className="nodeBadge" x={node.x + 16} y={node.y + 70}>{node.sampleFiles[0]?.slice(0, 33) ?? `${t("references")}: ${refCount(node.id)}`}</text>
                 </g>
               ))}
             </svg>

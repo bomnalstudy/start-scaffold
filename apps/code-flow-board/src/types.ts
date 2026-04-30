@@ -9,6 +9,7 @@ export type Role =
   | "orchestration"
   | "repository"
   | "security"
+  | "skill"
   | "service"
   | "ui"
   | "verification";

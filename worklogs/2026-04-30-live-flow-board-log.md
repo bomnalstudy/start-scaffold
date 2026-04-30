@@ -40,6 +40,12 @@ Users need to keep the flowchart open while vibe-coding. A static HTML file requ
 - Added explicit `Start` and `End` nodes to the live board so the graph reads as a top-to-bottom flow, not only a reference network.
 - Replaced the vague `core` role with clearer categories: `domain`, `service`, `repository`, and `entrypoint`.
 - Renamed UI labels so `automation` appears as run scripts and `verification` appears as tests/checks.
+- Changed the live board to render role-level nodes instead of file/component-level nodes.
+- Role nodes now carry related file samples so users can see which files belong to that role without duplicate node summaries.
+- Added `skill` as a separate role for `SKILL.md` and files under `skills/`.
+- Added direct node dragging on the SVG board, with edge paths recalculated from the moved node positions.
+- Excluded supporting roles (`docs`, `skill`) from the live graph canvas and role filter because they guide implementation rather than execute runtime flow.
+- Standardized the live board server back to port `5179` and stopped the extra `5180` dev server during verification.
 - Excluded `references` from default analysis to keep external/reference material out of the current project map.
 
 ## Remaining Risk

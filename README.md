@@ -85,6 +85,8 @@ http://127.0.0.1:5179
 .\scripts\start-code-flow-board.ps1 -TargetRoot "C:\path\to\project" -AiCommand "claude -p --max-budget-usd 0.20"
 ```
 
+라이브 보드 포트는 기본적으로 `5179`만 사용합니다.
+
 Mermaid 차트는 역할, 컴포넌트, 정적 참조 관계를 빠르게 보기 위한 탐색용 산출물입니다. 런타임 동작을 완전히 증명하는 아키텍처 문서로 보지는 않습니다.
 
 ## 실행 환경

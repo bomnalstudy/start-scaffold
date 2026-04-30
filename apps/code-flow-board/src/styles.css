@@ -38,8 +38,9 @@ marker path { fill: currentColor; }
 .edge-orchestration, .edge-verification { stroke: var(--purple); }
 .edge-security { stroke: var(--red); stroke-dasharray: 7 5; }
 .edge-database, .edge-backend, .edge-repository, .edge-service { stroke: var(--green); }
-.edge-docs, .edge-config, .edge-domain, .edge-entrypoint, .edge-project { stroke: #2f3c4a; }
-.node { cursor: pointer; }
+.edge-docs, .edge-skill, .edge-config, .edge-domain, .edge-entrypoint, .edge-project { stroke: #2f3c4a; }
+.node { cursor: grab; }
+.node.dragging { cursor: grabbing; }
 .nodeShape { stroke: #d8dee8; stroke-width: 1.2; fill: #fff; filter: drop-shadow(0 8px 18px rgba(30,41,59,.08)); }
 .node.selected .nodeShape { stroke: var(--primary); stroke-width: 2.4; }
 .nodeInset { stroke: #d8dee8; stroke-width: 1.1; fill: none; }
@@ -51,6 +52,7 @@ marker path { fill: currentColor; }
 .node-orchestration .nodeIcon, .node-verification .nodeIcon { fill: #f3efff; stroke: #cab9f2; }
 .node-database .nodeIcon, .node-backend .nodeIcon, .node-repository .nodeIcon, .node-service .nodeIcon { fill: #eefaf3; stroke: #bfe7ce; }
 .node-ui .nodeIcon, .node-automation .nodeIcon { fill: #eef8ff; stroke: #b9dbef; }
+.node-skill .nodeIcon { fill: #fff7ed; stroke: #fed7aa; }
 .zoomStack { position: absolute; right: 18px; top: 50%; display: grid; gap: 8px; transform: translateY(-50%); }
 .zoomStack button { width: 36px; height: 36px; border-radius: 10px; box-shadow: 0 8px 18px rgba(15,23,42,.08); }
 .addButton { position: absolute; right: 22px; bottom: 22px; width: 44px; height: 44px; border-radius: 14px; color: #fff; background: var(--primary); box-shadow: 0 12px 24px rgba(91,93,247,.28); }

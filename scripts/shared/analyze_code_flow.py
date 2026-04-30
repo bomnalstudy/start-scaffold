@@ -49,6 +49,8 @@ def role_for(path: Path) -> str:
     parts = set(path.parts)
     name = path.name.lower()
 
+    if name == "skill.md" or "skills" in parts:
+        return "skill"
     if suffix == ".md" or "docs" in parts:
         return "docs"
     if "test" in text or "spec" in text or "harness" in parts or "__tests__" in parts:
