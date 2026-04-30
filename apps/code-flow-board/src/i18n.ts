@@ -7,7 +7,7 @@ type TextKey =
   | "flow" | "details" | "generated" | "filesScanned" | "components" | "references"
   | "summary" | "files" | "localRefs" | "incoming" | "outgoing" | "live" | "loading" | "error"
   | "workspace" | "map" | "favorites" | "pureChaos" | "responsibilities" | "relationships"
-  | "terms" | "evidence" | "workflow";
+  | "terms" | "evidence" | "workflow" | "progress";
 
 const ko = {
   title: "\ucf54\ub4dc \ud50c\ub85c\uc6b0 \ub9f5",
@@ -40,6 +40,7 @@ const ko = {
   terms: "\uc6a9\uc5b4 \ud480\uc774",
   evidence: "\uadfc\uac70",
   workflow: "\uc791\ub3d9 \ud750\ub984",
+  progress: "\ubd84\uc11d \uc9c4\ud589",
   roleNames: {
     automation: "\uc2e4\ud589 \uc2a4\ud06c\ub9bd\ud2b8",
     backend: "\ubc31\uc5d4\ub4dc",
@@ -90,6 +91,7 @@ const en = {
   terms: "Terms",
   evidence: "Evidence",
   workflow: "Workflow",
+  progress: "Progress",
   roleNames: {
     automation: "run scripts",
     backend: "backend",

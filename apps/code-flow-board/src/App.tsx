@@ -57,6 +57,9 @@ function App() {
   const summary = selectedNode?.description?.summary ?? roleSummary(selectedNode?.role ?? "domain", language);
   const sourceLabel = selectedNode?.description?.analysisSource === "local-ai" ? "Local AI" : "";
   const graphBounds = useGraphBounds(layout?.nodes);
+  const progressText = data?.flowProgress
+    ? `${t("progress")}: ${data.flowProgress.completedBatches}/${data.flowProgress.totalBatches} ${data.flowProgress.status}`
+    : "";
 
   return (
     <main className="mapShell">
@@ -88,6 +91,7 @@ function App() {
           <div className="crumb"><span className="appDot">CF</span><strong>{t("title")}</strong></div>
           <div className="topActions">
             {currentFlow && <span>{t("workflow")}: {currentFlow.name}</span>}
+            {progressText && <span>{progressText}</span>}
             <span>{t("live")}</span>
             <select value={language} onChange={(event) => setLanguage(event.target.value as Language)}>
               <option value="ko">Korean</option>
@@ -150,6 +154,7 @@ function App() {
         <div className="detailsHeader">
           <h2>{t("details")}</h2>
           <p>{data ? `${t("generated")} ${new Date(data.generatedAt).toLocaleString()}` : t("loading")}</p>
+          {progressText && <p>{progressText}</p>}
         </div>
         {selectedNode && (
           <div className="details">

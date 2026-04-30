@@ -51,8 +51,8 @@ def compact_batch(batch: dict) -> dict:
     return {
         "batch": batch.get("batch"),
         "componentNames": batch.get("componentNames", [])[:4],
-        "candidates": batch.get("candidates", [])[:5],
-        "handoffs": batch.get("handoffs", [])[:6],
+        "candidates": [compact_node(item) for item in batch.get("candidates", [])[:6]],
+        "handoffs": batch.get("handoffs", [])[:4],
     }
 
 
@@ -65,12 +65,34 @@ def compact_flow(flow: dict | None) -> dict:
             {
                 "id": item.get("id", "main"),
                 "name": item.get("name", ""),
-                "summary": item.get("summary", ""),
-                "nodes": item.get("nodes", [])[:14],
-                "edges": item.get("edges", [])[:20],
+                "summary": str(item.get("summary", ""))[:240],
+                "nodes": [compact_node(node) for node in item.get("nodes", [])[:8]],
+                "edges": [compact_edge(edge) for edge in item.get("edges", [])[:10]],
             }
         )
     return {"flows": compacted}
+
+
+def compact_node(node: dict) -> dict:
+    return {
+        "id": node.get("id", ""),
+        "type": node.get("type", "process"),
+        "label": node.get("label", ""),
+        "role": node.get("role", "project"),
+        "summary": str(node.get("summary", ""))[:120],
+        "responsibilities": node.get("responsibilities", [])[:1],
+        "terms": node.get("terms", [])[:1],
+        "files": node.get("files", [])[:2],
+        "evidence": node.get("evidence", [])[:1],
+    }
+
+
+def compact_edge(edge: dict) -> dict:
+    return {
+        "from": edge.get("from", ""),
+        "to": edge.get("to", ""),
+        "label": str(edge.get("label", ""))[:60],
+    }
 
 
 def clear_stale_lock(lock_path: Path) -> None:
@@ -88,6 +110,8 @@ def process_exists(pid: int) -> bool:
             capture_output=True,
             text=True,
         )
+        if result.returncode != 0 and not result.stdout.strip():
+            return False
         return str(pid) in result.stdout
     try:
         os.kill(pid, 0)

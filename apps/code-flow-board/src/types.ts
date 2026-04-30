@@ -64,6 +64,17 @@ export type InferredFlow = {
   edges: InferredFlowEdge[];
 };
 
+export type FlowProgress = {
+  status: "running" | "completed" | "failed" | string;
+  language: string;
+  completedBatches: number;
+  totalBatches: number;
+  planKey?: string;
+  updatedAt: string;
+  message?: string;
+  error?: string;
+};
+
 export type CodeFlowData = {
   generatedAt: string;
   root: string;
@@ -77,6 +88,8 @@ export type CodeFlowData = {
   flowSource?: "local-ai";
   flowGeneratedAt?: string;
   flowLanguage?: "ko" | "en" | string;
+  flowComplete?: boolean;
+  flowProgress?: FlowProgress;
 };
 
 export type BoardNode = {

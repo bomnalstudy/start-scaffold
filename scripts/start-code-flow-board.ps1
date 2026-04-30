@@ -6,7 +6,7 @@ param(
     [string]$AiCommand,
     [string]$Language = "ko",
     [int]$MaxComponents = 0,
-    [int]$MaxFilesPerComponent = 4,
+    [int]$MaxFilesPerComponent = 0,
     [int]$BatchSize = 4
 )
 

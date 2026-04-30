@@ -75,6 +75,17 @@ Users need to keep the flowchart open while vibe-coding. A static HTML file requ
 - Changed the details dock so "doing" text comes from AI-written responsibilities, while function names, SQL, and table names stay in the evidence section.
 - Added refresh detection for old AI flow JSON that lacks plain-language responsibilities, so stale cache is regenerated in the active language.
 - Fixed a Python name collision in the sequential merge step that blocked the first AI batch from being saved.
+- Added `flowProgress` and `flowComplete` metadata so partial AI flowcharts show whether the whole project analysis is still running, failed, or completed.
+- Changed the live server refresh rule so partial-but-not-complete AI flowcharts continue background inference instead of stopping after the first usable nodes.
+- Added resume support for interrupted sequential AI flow inference; a later run skips already merged batches and continues from the next batch.
+- Added batch-stage progress messages so the board can show when AI is reading a batch versus merging it into the flowchart.
+- Fixed progress writes to preserve the saved partial flow from memory while the static analyzer is refreshing the base JSON.
+- Moved AI flow normalization into `scripts/shared/ai_flow_normalize.py` to keep the inference script under the 500-line file limit.
+- Added a compact repo-map prompt path so AI flow inference receives symbols, routes, imports, and side-effect signals instead of raw source excerpts.
+- Replaced the fixed default max-files-per-component setting with file-aware automatic grouping based on compact repo-map size.
+- Added a progress plan key so old partial runs are not resumed after token-budget or batching settings change.
+- Added merge-failure tolerance so a saved partial flow can keep scanning later batches even when one local-AI merge call fails.
+- Fixed progress-only writes so they preserve the latest successful merge instead of reverting the visible flowchart to an older partial graph.
 
 ## Remaining Risk
 
@@ -84,3 +95,5 @@ Users need to keep the flowchart open while vibe-coding. A static HTML file requ
 - AI-generated flowcharts depend on the user's local CLI auth, budget, command format, and the quality of selected file excerpts.
 - Each merge step still depends on local AI output quality; batch and merge files make failed or weak runs easier to inspect and retry.
 - Existing saved flow memory may remain partial until the sequential local-AI batches finish across the target project.
+- Resume uses the saved batch count and current language; major target-code changes may still need a clean re-run strategy later.
+- The compact repo map currently uses dependency-free regex extraction; a Tree-sitter backend would improve symbol accuracy while keeping the same graph-first architecture.

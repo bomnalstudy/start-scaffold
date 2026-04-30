@@ -5,11 +5,13 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
+from ai_flow_code_map import build_component_context, estimate_file_map_chars
 from ai_flow_io import chunked, clear_stale_lock, compact_batch as compact_batch_result, compact_flow, run_ai, save_batch, save_merge, save_prompt
+from ai_flow_normalize import normalize_flow
+from ai_flow_progress import completed_batch_count, flow_from_latest_merge, progress
 
 
 SUPPORTING_ROLES = {"docs", "skill"}
-FLOW_NODE_TYPES = {"start", "end", "process", "decision", "data", "io", "document", "subprocess"}
 PRODUCT_ROLES = {"entrypoint", "ui", "backend", "service", "orchestration", "repository", "database", "domain", "security"}
 ONE_OFF_MARKERS = {
     "backfill",
@@ -22,6 +24,7 @@ ONE_OFF_MARKERS = {
     "temporary",
     "tmp",
 }
+TARGET_UNIT_MAP_CHARS = 2600
 
 
 def read_json(path: Path) -> dict:
@@ -123,7 +126,7 @@ def selected_components(flow: dict, max_components: int) -> list[dict]:
     return ranked if max_components <= 0 else ranked[:max_components]
 
 
-def attach_component_files(flow: dict, components: list[dict], files_per_unit: int) -> list[dict]:
+def attach_component_files(flow: dict, components: list[dict], root: Path, files_per_unit: int) -> list[dict]:
     files_by_component: dict[str, list[str]] = {}
     for file in flow.get("files", []):
         if file.get("role") in SUPPORTING_ROLES:
@@ -133,14 +136,13 @@ def attach_component_files(flow: dict, components: list[dict], files_per_unit: i
             continue
         files_by_component.setdefault(file.get("component", ""), []).append(path)
     enriched = []
-    unit_size = max(1, files_per_unit)
     for component in components:
         all_files = [
             path for path in files_by_component.get(component["name"], component.get("sampleFiles", []))
             if path
         ]
-        for index, file_group in enumerate(chunked([{"path": path} for path in all_files], unit_size), start=1):
-            files = [item["path"] for item in file_group]
+        file_groups = fixed_file_groups(all_files, files_per_unit) if files_per_unit > 0 else auto_file_groups(root, all_files)
+        for index, files in enumerate(file_groups, start=1):
             next_component = dict(component)
             next_component["name"] = f"{component['name']} part {index}"
             next_component["sampleFiles"] = files
@@ -149,37 +151,25 @@ def attach_component_files(flow: dict, components: list[dict], files_per_unit: i
     return enriched
 
 
-def read_excerpt(root: Path, rel_path: str, max_chars: int) -> str:
-    path = root / rel_path
-    try:
-        text = path.read_text(encoding="utf-8", errors="ignore")
-    except Exception:
-        return ""
-    return text[:max_chars]
+def fixed_file_groups(files: list[str], files_per_unit: int) -> list[list[str]]:
+    return [[item["path"] for item in group] for group in chunked([{"path": path} for path in files], max(1, files_per_unit))]
 
 
-def build_component_context(root: Path, components: list[dict], max_files_per_component: int, max_chars: int) -> str:
-    blocks = []
-    for component in components:
-        file_blocks = []
-        files = component.get("sampleFiles", [])
-        selected_files = files if max_files_per_component <= 0 else files[:max_files_per_component]
-        for rel in selected_files:
-            excerpt = read_excerpt(root, rel, max_chars)
-            if excerpt:
-                file_blocks.append(f"--- {rel} ---\n{excerpt}")
-        blocks.append(
-            "\n".join(
-                [
-                    f"## {component['name']}",
-                    f"role: {component.get('primaryRole')}",
-                    f"fileCount: {component.get('fileCount')}",
-                    f"selectedFiles: {selected_files}",
-                    "\n\n".join(file_blocks) if file_blocks else "(no readable excerpts)",
-                ]
-            )
-        )
-    return "\n\n".join(blocks)
+def auto_file_groups(root: Path, files: list[str]) -> list[list[str]]:
+    groups = []
+    current = []
+    current_chars = 0
+    for path in files:
+        estimate = max(120, estimate_file_map_chars(root, path))
+        if current and current_chars + estimate > TARGET_UNIT_MAP_CHARS:
+            groups.append(current)
+            current = []
+            current_chars = 0
+        current.append(path)
+        current_chars += estimate
+    if current:
+        groups.append(current)
+    return groups
 
 
 def build_dependency_context(flow: dict, component_names: set[str], max_edges: int) -> str:
@@ -192,10 +182,10 @@ def build_dependency_context(flow: dict, component_names: set[str], max_edges: i
 
 def build_batch_prompt(flow: dict, root: Path, language: str, components: list[dict], max_files_per_component: int, batch_index: int) -> str:
     component_names = {item["name"] for item in components}
-    dependency_context = build_dependency_context(flow, component_names, 40)
-    component_context = build_component_context(root, components, max_files_per_component, 2200)
+    dependency_context = build_dependency_context(flow, component_names, 15)
+    component_context = build_component_context(root, components, max_files_per_component, 900)
     return f"""
-You are inspecting one small batch of files before a final flowchart is assembled.
+You are inspecting one compact local code map before a final flowchart is assembled.
 
 Audience:
 - The reader may not know programming.
@@ -211,11 +201,12 @@ Rules:
 - Do not invent steps outside this batch.
 - Do not make generic role summaries.
 - Extract concrete workflow candidates: starts, inputs, decisions, actions, data access, validation, and endings.
-- Return at most 3 candidate nodes for this batch.
+- Return at most 2 candidate nodes per component and 6 candidate nodes for this batch.
 - If this batch does not show a runtime step, return an empty candidates array.
 - Include files and evidence for every candidate node.
 - Write summary and responsibilities for a non-programmer. Do not use function names, SQL, table names, or file paths there unless you explain what they mean.
 - Put code identifiers only in evidence. If you must use a technical term such as heartbeat, job, queue, table, API, or database, add a terms item that explains it simply.
+- The code evidence below is a repo map: symbols, routes, imports, and detected side-effect signals. Prefer those structured signals over guessing from filenames.
 
 Return this exact JSON shape:
 {{
@@ -249,7 +240,7 @@ Project root:
 Dependency hints in this batch:
 {dependency_context}
 
-Code evidence in this batch:
+Compact code map in this batch:
 {component_context}
 """.strip()
 
@@ -272,13 +263,14 @@ Rules:
 - Keep Markdown-derived information behind code evidence; do not let .md files decide the main result flow.
 - Use only the current flow and the next batch result.
 - Build runtime or work-process flows, not a dependency map.
-- Prefer one main flow with 8 to 16 nodes.
+- Prefer one main flow with 6 to 12 nodes while batches are still running.
 - Keep common flowchart semantics: start, process, decision, io, data, subprocess, document, end.
 - Every node must include files and evidence.
 - Edges must explain the handoff or condition.
 - Keep good existing nodes from the current flow.
 - Add, replace, or connect nodes only when the next batch gives concrete evidence.
 - This is an intermediate result, so it can be incomplete, but it must remain valid JSON.
+- Keep the JSON compact. Do not expand descriptions unless the new batch changes the meaning.
 - Write node summaries and responsibilities for a non-programmer who does not know code.
 - Do not put function names, SQL, table names, or file paths in summary/responsibilities. Put those in evidence.
 - If a technical term is useful, keep it only when terms explains it in simple language.
@@ -326,99 +318,74 @@ Next batch result:
 """.strip()
 
 
-def write_partial_flow(flow_path: Path, base_flow: dict, raw_flow: dict) -> None:
+def write_partial_flow(flow_path: Path, base_flow: dict, raw_flow: dict, language: str, completed: int, total: int, plan_key: str, message: str = "") -> None:
     partial = dict(base_flow)
     partial["flows"] = normalize_flow(raw_flow)
     partial["flowSource"] = "local-ai"
     partial["flowGeneratedAt"] = datetime.now(timezone.utc).isoformat()
-    partial["flowLanguage"] = base_flow.get("flowLanguage", "ko")
+    partial["flowLanguage"] = language
+    partial["flowComplete"] = False
+    partial["flowProgress"] = progress("running", language, completed, total, plan_key, message or f"AI batch {completed} of {total} merged.")
     write_flow(flow_path, partial)
     write_memory(flow_path, partial)
 
 
-def infer_and_merge_sequentially(command: str, flow: dict, flow_path: Path, root: Path, language: str, components: list[dict], max_files: int, batch_size: int, timeout: int, work_dir: Path) -> dict:
+def write_progress_only(flow_path: Path, base_flow: dict, language: str, completed: int, total: int, plan_key: str, message: str) -> None:
+    partial = flow_from_latest_merge(flow_path, base_flow, language, completed, total, plan_key)
+    if not partial.get("flows"):
+        memory = load_memory(flow_path)
+        if memory and memory.get("flows") and memory.get("flowLanguage") == language:
+            partial = memory
+    partial["flowSource"] = "local-ai"
+    partial["flowLanguage"] = language
+    partial["flowComplete"] = False
+    partial["flowProgress"] = progress("running", language, completed, total, plan_key, message)
+    write_flow(flow_path, partial)
+    if partial.get("flows"):
+        write_memory(flow_path, partial)
+
+
+def infer_and_merge_sequentially(command: str, flow: dict, flow_path: Path, root: Path, language: str, components: list[dict], max_files: int, batch_size: int, timeout: int, work_dir: Path, plan_key: str) -> dict:
     memory = load_memory(flow_path)
-    current = {"flows": memory.get("flows", [])} if memory else None
-    for index, batch in enumerate(chunked(components, batch_size), start=1):
+    memory_progress = memory.get("flowProgress", {}) if memory else {}
+    can_reuse_memory = bool(
+        memory
+        and memory.get("flowLanguage") == language
+        and memory_progress.get("planKey") == plan_key
+        and int(memory_progress.get("completedBatches", 0) or 0) > 0
+    )
+    current = {"flows": memory.get("flows", [])} if can_reuse_memory else None
+    batches = chunked(components, batch_size)
+    if not batches:
+        raise RuntimeError("No batches were available to infer.")
+    completed_before = completed_batch_count(memory, language, len(batches), plan_key)
+    if completed_before >= len(batches) and current:
+        return current
+    write_progress_only(flow_path, flow, language, completed_before, len(batches), plan_key, "AI flow inference started.")
+    for index, batch in enumerate(batches, start=1):
+        if index <= completed_before:
+            continue
+        write_progress_only(flow_path, flow, language, index - 1, len(batches), plan_key, f"AI batch {index} of {len(batches)} is reading code.")
         prompt = build_batch_prompt(flow, root, language, batch, max_files, index)
         save_prompt(work_dir, f"prompt-batch-{index:03}.md", prompt)
         batch_result = run_ai(command, prompt, timeout)
         batch_result["componentNames"] = [item["name"] for item in batch]
         save_batch(work_dir, index, batch_result)
         print(f"AI flow batch {index}: {len(batch)} components")
+        write_progress_only(flow_path, flow, language, index - 1, len(batches), plan_key, f"AI batch {index} of {len(batches)} is merging into the flowchart.")
         prompt = build_merge_prompt(flow, language, current, batch_result)
         save_prompt(work_dir, f"prompt-merge-{index:03}.md", prompt)
-        current = run_ai(command, prompt, timeout)
-        save_merge(work_dir, index, current)
-        write_partial_flow(flow_path, flow, current)
-        print(f"AI flow merge {index}: saved partial flow")
-    if not current:
-        raise RuntimeError("No batches were available to infer.")
+        try:
+            current = run_ai(command, prompt, timeout)
+            save_merge(work_dir, index, current)
+            write_partial_flow(flow_path, flow, current, language, index, len(batches), plan_key)
+            print(f"AI flow merge {index}/{len(batches)}: saved partial flow")
+        except Exception as error:
+            if not current:
+                raise
+            write_partial_flow(flow_path, flow, current, language, index, len(batches), plan_key, f"AI batch {index} of {len(batches)} was scanned, but merge was skipped after a local AI error.")
+            print(f"AI flow merge {index}/{len(batches)} skipped: {error}")
     return current
-
-
-def clean_id(value: str, fallback: str) -> str:
-    cleaned = "".join(char.lower() if char.isalnum() else "-" for char in value).strip("-")
-    while "--" in cleaned:
-        cleaned = cleaned.replace("--", "-")
-    return cleaned or fallback
-
-
-def normalize_flow(raw: dict) -> list[dict]:
-    flows = raw.get("flows")
-    if not isinstance(flows, list) or not flows:
-        raise RuntimeError("AI JSON is missing flows.")
-    normalized = []
-    for flow_index, item in enumerate(flows[:3]):
-        nodes = []
-        seen = set()
-        for node_index, node in enumerate(item.get("nodes", [])[:20]):
-            node_id = clean_id(str(node.get("id") or node.get("label") or ""), f"node-{node_index}")
-            if node_id in seen:
-                node_id = f"{node_id}-{node_index}"
-            seen.add(node_id)
-            node_type = str(node.get("type", "process")).strip()
-            if node_type not in FLOW_NODE_TYPES:
-                node_type = "process"
-            role = str(node.get("role", "project")).strip()
-            nodes.append(
-                {
-                    "id": node_id,
-                    "type": node_type,
-                    "label": str(node.get("label") or node_id).strip()[:80],
-                    "role": role,
-                    "summary": str(node.get("summary", "")).strip()[:500],
-                    "responsibilities": [str(text).strip()[:220] for text in node.get("responsibilities", [])[:5] if str(text).strip()],
-                    "terms": [str(text).strip()[:220] for text in node.get("terms", [])[:6] if str(text).strip()],
-                    "files": [str(path).strip() for path in node.get("files", [])[:8] if str(path).strip()],
-                    "evidence": [str(text).strip()[:240] for text in node.get("evidence", [])[:5] if str(text).strip()],
-                }
-            )
-        node_ids = {node["id"] for node in nodes}
-        edges = []
-        for edge in item.get("edges", [])[:28]:
-            source = clean_id(str(edge.get("from", "")), "")
-            target = clean_id(str(edge.get("to", "")), "")
-            if source in node_ids and target in node_ids:
-                edges.append(
-                    {
-                        "from": source,
-                        "to": target,
-                        "label": str(edge.get("label", "")).strip()[:80],
-                        "reason": str(edge.get("reason", "")).strip()[:260],
-                    }
-                )
-        if nodes:
-            normalized.append(
-                {
-                    "id": clean_id(str(item.get("id", "")), f"flow-{flow_index}"),
-                    "name": str(item.get("name") or f"Flow {flow_index + 1}").strip()[:80],
-                    "summary": str(item.get("summary", "")).strip()[:500],
-                    "nodes": nodes,
-                    "edges": edges,
-                }
-            )
-    return normalized
 
 
 def main() -> int:
@@ -427,7 +394,7 @@ def main() -> int:
     parser.add_argument("--flow-path", default="docs/generated/code-flow.json")
     parser.add_argument("--language", default="ko")
     parser.add_argument("--max-components", type=int, default=0)
-    parser.add_argument("--max-files-per-component", type=int, default=4)
+    parser.add_argument("--max-files-per-component", type=int, default=0)
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--work-dir", default="docs/generated/code-flow-work")
     parser.add_argument("--ai-command", required=True)
@@ -441,8 +408,13 @@ def main() -> int:
     components = attach_component_files(
         flow,
         selected_components(flow, args.max_components),
+        root,
         args.max_files_per_component,
     )
+    batch_size = max(1, args.batch_size)
+    total_batches = len(chunked(components, batch_size))
+    unit_mode = f"fixedFiles={args.max_files_per_component}" if args.max_files_per_component > 0 else f"autoMapChars={TARGET_UNIT_MAP_CHARS}"
+    plan_key = f"repo-map-v2:{unit_mode}:batch={batch_size}:units={len(components)}"
     work_dir = (root / args.work_dir).resolve()
     lock_path = acquire_lock(work_dir)
     try:
@@ -454,10 +426,20 @@ def main() -> int:
             args.language,
             components,
             args.max_files_per_component,
-            max(1, args.batch_size),
+            batch_size,
             args.timeout,
             work_dir,
+            plan_key,
         )
+    except Exception as error:
+        failed_flow = read_json(flow_path) if flow_path.exists() else dict(flow)
+        completed = completed_batch_count(failed_flow, args.language, total_batches, plan_key)
+        failed_flow["flowSource"] = "local-ai"
+        failed_flow["flowLanguage"] = args.language
+        failed_flow["flowComplete"] = False
+        failed_flow["flowProgress"] = progress("failed", args.language, completed, total_batches, plan_key, "AI flow inference failed.", str(error))
+        write_flow(flow_path, failed_flow)
+        raise
     finally:
         lock_path.unlink(missing_ok=True)
 
@@ -465,6 +447,8 @@ def main() -> int:
     flow["flowSource"] = "local-ai"
     flow["flowGeneratedAt"] = datetime.now(timezone.utc).isoformat()
     flow["flowLanguage"] = args.language
+    flow["flowComplete"] = True
+    flow["flowProgress"] = progress("completed", args.language, total_batches, total_batches, plan_key, "AI flow inference completed.")
     write_flow(flow_path, flow)
     write_memory(flow_path, flow)
 

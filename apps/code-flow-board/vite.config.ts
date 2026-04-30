@@ -16,8 +16,9 @@ const flowInferPath = path.join(scaffoldRoot, "scripts/shared/infer_code_flows.p
 const aiCommand = process.env.CODE_FLOW_AI_COMMAND ?? "";
 const flowLanguage = process.env.CODE_FLOW_LANGUAGE ?? process.env.CODE_FLOW_DESCRIPTION_LANG ?? "ko";
 const flowMax = process.env.CODE_FLOW_MAX_COMPONENTS ?? process.env.CODE_FLOW_DESCRIPTION_MAX ?? "0";
-const flowMaxFiles = process.env.CODE_FLOW_MAX_FILES_PER_COMPONENT ?? "4";
+const flowMaxFiles = process.env.CODE_FLOW_MAX_FILES_PER_COMPONENT ?? "0";
 const flowBatchSize = process.env.CODE_FLOW_BATCH_SIZE ?? "4";
+const disableRefresh = process.env.CODE_FLOW_DISABLE_REFRESH === "1";
 const ignoredParts = new Set([
   ".git",
   ".graveyard",
@@ -99,15 +100,25 @@ function stripBom(content: string) {
   return content.charCodeAt(0) === 0xfeff ? content.slice(1) : content;
 }
 
-function hasPlainDescriptions(flowData: { flows?: Array<{ nodes?: Array<{ responsibilities?: unknown[]; terms?: unknown[] }> }> }) {
+type FlowSnapshot = {
+  flows?: Array<{ nodes?: Array<{ responsibilities?: unknown[]; terms?: unknown[] }> }>;
+  flowComplete?: boolean;
+  flowLanguage?: string;
+  flowProgress?: { status?: string };
+};
+
+function hasPlainDescriptions(flowData: FlowSnapshot) {
   return flowData.flows?.some((flow) =>
     flow.nodes?.some((node) => Array.isArray(node.responsibilities) && node.responsibilities.length)
   ) ?? false;
 }
 
 async function flowNeedsRefresh(content: string, language: string) {
-  const parsed = JSON.parse(content) as { flows?: Array<{ nodes?: Array<{ responsibilities?: unknown[]; terms?: unknown[] }> }>; flowLanguage?: string };
-  return !parsed.flows?.length || parsed.flowLanguage !== normalizedLanguage(language) || !hasPlainDescriptions(parsed);
+  const parsed = JSON.parse(content) as FlowSnapshot;
+  return !parsed.flows?.length
+    || parsed.flowLanguage !== normalizedLanguage(language)
+    || !hasPlainDescriptions(parsed)
+    || parsed.flowComplete !== true;
 }
 
 function flowBoardPlugin() {
@@ -120,6 +131,7 @@ function flowBoardPlugin() {
       let refreshRunning = false;
 
       const requestRefresh = async (language = activeLanguage) => {
+        if (disableRefresh) return;
         if (refreshRunning) return;
         refreshRunning = true;
         try {
@@ -140,11 +152,11 @@ function flowBoardPlugin() {
           res.setHeader("Content-Type", "application/json; charset=utf-8");
           const content = await readFlowData(activeLanguage);
           res.end(content);
-          if (await flowNeedsRefresh(content, activeLanguage)) {
+          if (!disableRefresh && await flowNeedsRefresh(content, activeLanguage)) {
             void requestRefresh(activeLanguage).catch((error) => console.error(error));
           }
         } catch {
-          void requestRefresh(activeLanguage);
+          if (!disableRefresh) void requestRefresh(activeLanguage);
           res.end(await readFile(dataPath, "utf8"));
         }
       });
@@ -162,6 +174,7 @@ function flowBoardPlugin() {
 
       server.watcher.on("change", (filePath) => {
         if (shouldIgnore(filePath)) return;
+        if (disableRefresh) return;
         clearTimeout(timer);
         timer = setTimeout(async () => {
           try {
