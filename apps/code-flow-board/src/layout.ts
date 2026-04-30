@@ -1,44 +1,66 @@
 import ELK from "elkjs/lib/elk.bundled.js";
-import type { BoardEdge, BoardNode, CodeFlowData, Role } from "./types";
+import type { BoardEdge, BoardNode, CodeFlowData, InferredFlow, InferredFlowNode, Role } from "./types";
 
 const elk = new ELK();
-const nodeWidth = 230;
-const nodeHeight = 78;
+const nodeWidth = 250;
+const nodeHeight = 88;
 const supportingRoles = new Set<Role>(["docs", "skill"]);
 
-function kindFor(role: string): BoardNode["kind"] {
-  if (role === "security" || role === "verification") return "decision";
-  if (role === "database" || role === "repository") return "data";
-  if (role === "docs" || role === "skill") return "document";
-  if (role === "ui") return "io";
-  if (role === "orchestration" || role === "service") return "subprocess";
-  if (role === "entrypoint") return "start";
-  return "process";
-}
-
-function boundaryNode(id: "__start" | "__end", label: string, kind: "start" | "end"): BoardNode {
+function fallbackFlow(data: CodeFlowData): InferredFlow {
   return {
-    id,
-    label,
-    role: "project",
-    kind,
-    fileCount: 0,
-    sampleFiles: [],
-    x: 0,
-    y: 0,
-    width: nodeWidth,
-    height: nodeHeight,
+    id: "ai-flow-required",
+    name: "AI flow inference required",
+    summary: "Start the board with a local AI command so the actual runtime workflow can be inferred from code.",
+    nodes: [
+      {
+        id: "ai-flow-required",
+        type: "process",
+        role: "project",
+        label: "AI flow inference required",
+        summary: "The current data only has file groups. Run the local AI flow inference step to generate real start, decision, action, and end nodes.",
+        files: data.components.slice(0, 6).flatMap((component) => component.sampleFiles.slice(0, 1)),
+      },
+    ],
+    edges: [],
   };
 }
 
-function roleNode(role: Role, fileCount: number, sampleFiles: string[]): BoardNode {
+function selectedFlow(data: CodeFlowData) {
+  const flow = data.flows?.find((item) => item.nodes.length > 1) ?? data.flows?.[0];
+  return flow ?? fallbackFlow(data);
+}
+
+function filesForNode(data: CodeFlowData, node: InferredFlowNode) {
+  if (node.files?.length) return node.files.slice(0, 8);
+  if (node.role === "project") return data.files.slice(0, 8).map((file) => file.path);
+  return data.files.filter((file) => file.role === node.role).slice(0, 8).map((file) => file.path);
+}
+
+function fileCountForNode(data: CodeFlowData, node: InferredFlowNode, sampleFiles: string[]) {
+  if (node.files?.length) return node.files.length;
+  if (node.role === "project") return data.fileCount;
+  return data.roles[node.role] ?? sampleFiles.length;
+}
+
+function toBoardNode(data: CodeFlowData, node: InferredFlowNode): BoardNode {
+  const sampleFiles = filesForNode(data, node);
   return {
-    id: `role:${role}`,
-    label: role,
-    role,
-    kind: kindFor(role),
-    fileCount,
+    id: node.id,
+    label: node.label,
+    role: node.role,
+    kind: node.type,
+    fileCount: fileCountForNode(data, node, sampleFiles),
     sampleFiles,
+    evidence: node.evidence?.slice(0, 4),
+    description: node.summary
+      ? {
+          summary: node.summary,
+          responsibilities: node.evidence?.slice(0, 4) ?? [],
+          relationships: [],
+          confidence: data.flowSource === "local-ai" ? "medium" : "low",
+          analysisSource: data.flowSource,
+        }
+      : undefined,
     x: 0,
     y: 0,
     width: nodeWidth,
@@ -46,86 +68,49 @@ function roleNode(role: Role, fileCount: number, sampleFiles: string[]): BoardNo
   };
 }
 
-function filesByRole(data: CodeFlowData) {
-  const groups = new Map<Role, string[]>();
-  data.files.forEach((file) => {
-    const list = groups.get(file.role) ?? [];
-    if (list.length < 8) list.push(file.path);
-    groups.set(file.role, list);
-  });
-  return groups;
+function matchesNode(node: BoardNode, query: string, role: string) {
+  if (role && node.role !== role && node.role !== "project") return false;
+  if (!query) return true;
+  return [node.label, node.role, node.description?.summary, ...node.sampleFiles, ...(node.evidence ?? [])]
+    .join(" ")
+    .toLowerCase()
+    .includes(query);
 }
 
-function roleEdges(data: CodeFlowData) {
-  const componentRoles = new Map(data.components.map((item) => [item.name, item.primaryRole]));
-  const counts = new Map<string, number>();
-  data.dependencies.forEach((edge) => {
-    const from = componentRoles.get(edge.from);
-    const to = componentRoles.get(edge.to);
-    if (!from || !to || from === to) return;
-    if (supportingRoles.has(from) || supportingRoles.has(to)) return;
-    const key = `${from}->${to}`;
-    counts.set(key, (counts.get(key) ?? 0) + edge.count);
-  });
-  return [...counts.entries()].map(([key, count], index) => {
-    const [from, to] = key.split("->");
-    return {
-      id: `role-dep-${index}`,
-      sources: [`role:${from}`],
-      targets: [`role:${to}`],
-      count,
-    };
-  });
+function visibleEdge(edge: InferredFlow["edges"][number], nodeIds: Set<string>) {
+  return nodeIds.has(edge.from) && nodeIds.has(edge.to);
 }
 
 export async function layoutFlow(data: CodeFlowData, query: string, role: string) {
   const normalizedQuery = query.trim().toLowerCase();
-  const groupedFiles = filesByRole(data);
-  const roles = (Object.keys(data.roles) as Role[])
-    .filter((item) => !supportingRoles.has(item))
-    .filter((item) => !role || item === role)
-    .filter((item) => {
-      if (!normalizedQuery) return true;
-      const samples = groupedFiles.get(item) ?? [];
-      return [item, ...samples].join(" ").toLowerCase().includes(normalizedQuery);
-    })
-    .sort((a, b) => data.roles[b] - data.roles[a] || a.localeCompare(b));
+  const flow = selectedFlow(data);
+  const boardNodes = flow.nodes
+    .filter((node) => node.role === "project" || !supportingRoles.has(node.role))
+    .map((node) => toBoardNode(data, node))
+    .filter((node) => matchesNode(node, normalizedQuery, role));
 
-  const startNode = boundaryNode("__start", "Start", "start");
-  const endNode = boundaryNode("__end", "End", "end");
-  const roleNodes = roles.map((item) => roleNode(item, data.roles[item] ?? 0, groupedFiles.get(item) ?? []));
-  const visibleRoleIds = new Set(roleNodes.map((item) => item.id));
-  const internalEdges = roleEdges(data).filter((edge) => visibleRoleIds.has(edge.sources[0]) && visibleRoleIds.has(edge.targets[0]));
-  const outgoing = new Set(internalEdges.map((edge) => edge.sources[0]));
-
-  const nodes = [
-    { id: startNode.id, width: nodeWidth, height: nodeHeight },
-    ...roleNodes.map((item) => ({ id: item.id, width: nodeWidth, height: nodeHeight })),
-    { id: endNode.id, width: nodeWidth, height: nodeHeight },
-  ];
-  const startEdges = roleNodes.map((item, index) => ({ id: `start-${index}`, sources: [startNode.id], targets: [item.id] }));
-  const endEdges = roleNodes
-    .filter((item) => !outgoing.has(item.id))
-    .map((item, index) => ({ id: `end-${index}`, sources: [item.id], targets: [endNode.id] }));
-  const edges = [...startEdges, ...internalEdges, ...endEdges];
-
+  const nodeIds = new Set(boardNodes.map((node) => node.id));
+  const flowEdges = flow.edges.filter((edge) => visibleEdge(edge, nodeIds));
   const graph = await elk.layout({
     id: "root",
     layoutOptions: {
       "elk.algorithm": "layered",
       "elk.direction": "DOWN",
-      "elk.spacing.nodeNode": "70",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "95",
+      "elk.spacing.nodeNode": "90",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "110",
       "elk.edgeRouting": "ORTHOGONAL",
+      "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
     },
-    children: nodes,
-    edges,
+    children: boardNodes.map((node) => ({ id: node.id, width: node.width, height: node.height })),
+    edges: flowEdges.map((edge, index) => ({
+      id: `${edge.from}->${edge.to}:${index}`,
+      sources: [edge.from],
+      targets: [edge.to],
+      labels: edge.label ? [{ text: edge.label }] : undefined,
+    })),
   });
 
-  const nodeMap = new Map<string, BoardNode>();
-  nodeMap.set(startNode.id, startNode);
-  nodeMap.set(endNode.id, endNode);
-  roleNodes.forEach((item) => nodeMap.set(item.id, item));
+  const nodeMap = new Map(boardNodes.map((node) => [node.id, node]));
   graph.children?.forEach((item) => {
     const node = nodeMap.get(item.id);
     if (!node) return;
@@ -133,12 +118,17 @@ export async function layoutFlow(data: CodeFlowData, query: string, role: string
     node.y = item.y ?? 0;
   });
 
-  const boardEdges: BoardEdge[] = (graph.edges ?? []).map((edge) => ({
-    id: edge.id,
-    from: edge.sources[0],
-    to: edge.targets[0],
-    role: nodeMap.get(edge.targets[0])?.role ?? "project",
-    points: edge.sections?.[0]?.bendPoints ?? [],
-  }));
-  return { nodes: [...nodeMap.values()], edges: boardEdges };
+  const boardEdges: BoardEdge[] = (graph.edges ?? []).map((edge, index) => {
+    const original = flowEdges[index];
+    return {
+      id: edge.id,
+      from: edge.sources[0],
+      to: edge.targets[0],
+      label: original?.label,
+      role: nodeMap.get(edge.targets[0])?.role ?? "project",
+      points: edge.sections?.[0]?.bendPoints ?? [],
+    };
+  });
+
+  return { nodes: [...nodeMap.values()], edges: boardEdges, flow };
 }

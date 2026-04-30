@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { createTranslator, type Language, roleSummary } from "./i18n";
+import { edgeLabelPoint, pathFor } from "./edgePath";
 import { layoutFlow } from "./layout";
-import type { BoardEdge, BoardNode, Role } from "./types";
+import { shapePath } from "./nodeShape";
+import type { BoardNode, Role } from "./types";
 import { useCanvasView } from "./useCanvasView";
 import { useCodeFlow } from "./useCodeFlow";
 import { useNodeDrag } from "./useNodeDrag";
@@ -15,25 +17,6 @@ const roleIcons: Record<Role | "project", string> = {
   security: "SE", skill: "SK", service: "SV", ui: "UI", verification: "VE",
   project: "PR",
 };
-
-function pathFor(edge: BoardEdge, nodes: BoardNode[]) {
-  const from = nodes.find((node) => node.id === edge.from);
-  const to = nodes.find((node) => node.id === edge.to);
-  if (!from || !to) return "";
-  const start = { x: from.x + from.width / 2, y: from.y + from.height };
-  const end = { x: to.x + to.width / 2, y: to.y };
-  const midY = start.y + Math.max(42, (end.y - start.y) / 2);
-  return `M ${start.x} ${start.y} L ${start.x} ${midY} L ${end.x} ${midY} L ${end.x} ${end.y}`;
-}
-
-function shapePath(node: BoardNode) {
-  const { x, y, width: w, height: h } = node;
-  if (node.kind === "decision") return `M ${x + w / 2} ${y} L ${x + w} ${y + h / 2} L ${x + w / 2} ${y + h} L ${x} ${y + h / 2} Z`;
-  if (node.kind === "data") return `M ${x} ${y + 12} C ${x} ${y - 4}, ${x + w} ${y - 4}, ${x + w} ${y + 12} L ${x + w} ${y + h - 12} C ${x + w} ${y + h + 4}, ${x} ${y + h + 4}, ${x} ${y + h - 12} Z M ${x} ${y + 12} C ${x} ${y + 28}, ${x + w} ${y + 28}, ${x + w} ${y + 12}`;
-  if (node.kind === "io") return `M ${x + 22} ${y} H ${x + w} L ${x + w - 22} ${y + h} H ${x} Z`;
-  if (node.kind === "document") return `M ${x} ${y} H ${x + w} V ${y + h - 14} C ${x + w * 0.72} ${y + h + 8}, ${x + w * 0.25} ${y + h - 24}, ${x} ${y + h} Z`;
-  return "";
-}
 
 function App() {
   const [layout, setLayout] = useState<LayoutState | null>(null);
@@ -61,6 +44,7 @@ function App() {
   }, [language]);
 
   const selectedNode = layout?.nodes.find((node) => node.id === selected) ?? layout?.nodes[0];
+  const currentFlow = layout?.flow;
   const inbound = layout?.edges.filter((edge) => edge.to === selectedNode?.id).length ?? 0;
   const outbound = layout?.edges.filter((edge) => edge.from === selectedNode?.id).length ?? 0;
   const refCount = (nodeId: string) => {
@@ -103,6 +87,7 @@ function App() {
         <header className="floatingTop">
           <div className="crumb"><span className="appDot">CF</span><strong>{t("title")}</strong></div>
           <div className="topActions">
+            {currentFlow && <span>{t("workflow")}: {currentFlow.name}</span>}
             <span>{t("live")}</span>
             <select value={language} onChange={(event) => setLanguage(event.target.value as Language)}>
               <option value="ko">Korean</option>
@@ -124,6 +109,10 @@ function App() {
                 </marker>
               </defs>
               {layout?.edges.map((edge) => <path className={`edge edge-${edge.role}`} d={pathFor(edge, layout.nodes)} key={edge.id} markerEnd="url(#arrow)" />)}
+              {layout?.edges.filter((edge) => edge.label).map((edge) => {
+                const point = edgeLabelPoint(edge, layout.nodes);
+                return <text className="edgeLabel" x={point.x} y={point.y - 6} key={`${edge.id}-label`}>{edge.label}</text>;
+              })}
               {layout?.nodes.map((node) => (
                 <g
                   className={`node node-${node.role} ${selectedNode?.id === node.id ? "selected" : ""} ${nodeDrag.draggingId === node.id ? "dragging" : ""}`}
@@ -169,7 +158,7 @@ function App() {
             <p>{t("summary")}: {summary}</p>
             {selectedNode.description?.responsibilities.length ? (
               <>
-                <h4>{language === "ko" ? "하는 일" : "Responsibilities"}</h4>
+                <h4>{t("responsibilities")}</h4>
                 <ul>{selectedNode.description.responsibilities.map((item) => <li key={item}>{item}</li>)}</ul>
               </>
             ) : null}
@@ -180,8 +169,14 @@ function App() {
             </section>
             {selectedNode.description?.relationships.length ? (
               <>
-                <h4>{language === "ko" ? "관계 설명" : "Relationships"}</h4>
+                <h4>{t("relationships")}</h4>
                 <ul>{selectedNode.description.relationships.map((item) => <li key={item}>{item}</li>)}</ul>
+              </>
+            ) : null}
+            {selectedNode.evidence?.length ? (
+              <>
+                <h4>{t("evidence")}</h4>
+                <ul>{selectedNode.evidence.map((item) => <li key={item}>{item}</li>)}</ul>
               </>
             ) : null}
             <div className="stats">

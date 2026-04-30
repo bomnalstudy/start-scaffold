@@ -36,6 +36,31 @@ export type FlowEdge = {
   count: number;
 };
 
+export type InferredFlowNode = {
+  id: string;
+  type: "start" | "end" | "process" | "decision" | "data" | "io" | "document" | "subprocess";
+  label: string;
+  role: Role | "project";
+  summary?: string;
+  files?: string[];
+  evidence?: string[];
+};
+
+export type InferredFlowEdge = {
+  from: string;
+  to: string;
+  label?: string;
+  reason?: string;
+};
+
+export type InferredFlow = {
+  id: string;
+  name: string;
+  summary: string;
+  nodes: InferredFlowNode[];
+  edges: InferredFlowEdge[];
+};
+
 export type CodeFlowData = {
   generatedAt: string;
   root: string;
@@ -45,6 +70,9 @@ export type CodeFlowData = {
   dependencies: FlowEdge[];
   externalDependencies: FlowEdge[];
   files: Array<{ path: string; role: Role; component: string }>;
+  flows?: InferredFlow[];
+  flowSource?: "local-ai";
+  flowGeneratedAt?: string;
 };
 
 export type BoardNode = {
@@ -54,6 +82,7 @@ export type BoardNode = {
   kind: "start" | "end" | "process" | "decision" | "data" | "io" | "document" | "subprocess";
   fileCount: number;
   sampleFiles: string[];
+  evidence?: string[];
   description?: FlowDescription;
   x: number;
   y: number;

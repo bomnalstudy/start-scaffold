@@ -28,6 +28,8 @@ Every task follows this sequence:
 - Keep one objective per run.
 - Split implementation and review into separate runs.
 - Keep static instructions stable and place variable details at the end.
+- For large analysis, AI-processing, generation, or export tasks, process in small sequential batches instead of one all-at-once run.
+- Save or expose intermediate results when practical so each batch can be checked before continuing.
 
 ## 4. Prompt Structure Rules
 

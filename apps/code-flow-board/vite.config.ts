@@ -10,11 +10,14 @@ const scaffoldRoot = path.resolve(appDir, "../..");
 const targetRoot = process.env.CODE_FLOW_ROOT ? path.resolve(process.env.CODE_FLOW_ROOT) : scaffoldRoot;
 const serverPort = Number(process.env.CODE_FLOW_PORT ?? 5179);
 const dataPath = path.join(targetRoot, "docs/generated/code-flow.json");
+const memoryPath = path.join(targetRoot, "docs/generated/code-flow-memory.json");
 const analyzerPath = path.join(scaffoldRoot, "scripts/shared/analyze_code_flow.py");
-const enricherPath = path.join(scaffoldRoot, "scripts/shared/enrich_code_flow_descriptions.py");
+const flowInferPath = path.join(scaffoldRoot, "scripts/shared/infer_code_flows.py");
 const aiCommand = process.env.CODE_FLOW_AI_COMMAND ?? "";
-const descriptionLanguage = process.env.CODE_FLOW_DESCRIPTION_LANG ?? "ko";
-const descriptionMax = process.env.CODE_FLOW_DESCRIPTION_MAX ?? "24";
+const flowLanguage = process.env.CODE_FLOW_LANGUAGE ?? process.env.CODE_FLOW_DESCRIPTION_LANG ?? "ko";
+const flowMax = process.env.CODE_FLOW_MAX_COMPONENTS ?? process.env.CODE_FLOW_DESCRIPTION_MAX ?? "0";
+const flowMaxFiles = process.env.CODE_FLOW_MAX_FILES_PER_COMPONENT ?? "4";
+const flowBatchSize = process.env.CODE_FLOW_BATCH_SIZE ?? "4";
 const ignoredParts = new Set([
   ".git",
   ".graveyard",
@@ -42,30 +45,47 @@ function runAnalyzer() {
   });
 }
 
-function runEnricher() {
-  if (!aiCommand) return Promise.reject(new Error("CODE_FLOW_AI_COMMAND is required for node descriptions."));
+function runFlowInference() {
+  if (!aiCommand) return Promise.reject(new Error("CODE_FLOW_AI_COMMAND is required for AI flow inference."));
   return new Promise<void>((resolve, reject) => {
     const python = process.platform === "win32" ? "python" : "python3";
     const args = [
-      enricherPath,
+      flowInferPath,
       "--root",
       targetRoot,
       "--language",
-      descriptionLanguage,
+      flowLanguage,
       "--max-components",
-      descriptionMax,
+      flowMax,
+      "--max-files-per-component",
+      flowMaxFiles,
+      "--batch-size",
+      flowBatchSize,
       "--ai-command",
       aiCommand,
     ];
     const child = spawn(python, args, { stdio: "inherit" });
     child.on("error", reject);
-    child.on("exit", (code) => code === 0 ? resolve() : reject(new Error(`Enricher exited with ${code}`)));
+    child.on("exit", (code) => code === 0 ? resolve() : reject(new Error(`Flow inference exited with ${code}`)));
   });
 }
 
 async function refreshFlow() {
   await runAnalyzer();
-  await runEnricher();
+  await runFlowInference();
+}
+
+async function readFlowData() {
+  const content = await readFile(dataPath, "utf8");
+  const parsed = JSON.parse(content) as { flows?: unknown[] };
+  if (!parsed.flows?.length) {
+    try {
+      return await readFile(memoryPath, "utf8");
+    } catch {
+      return content;
+    }
+  }
+  return content;
 }
 
 function flowBoardPlugin() {
@@ -79,7 +99,7 @@ function flowBoardPlugin() {
       server.middlewares.use("/api/code-flow", async (_req, res) => {
         try {
           res.setHeader("Content-Type", "application/json; charset=utf-8");
-          res.end(await readFile(dataPath, "utf8"));
+          res.end(await readFlowData());
         } catch {
           await refreshFlow();
           res.end(await readFile(dataPath, "utf8"));

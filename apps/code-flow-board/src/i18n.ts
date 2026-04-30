@@ -6,7 +6,8 @@ type TextKey =
   | "title" | "eyebrow" | "search" | "searchPlaceholder" | "language" | "roles" | "all"
   | "flow" | "details" | "generated" | "filesScanned" | "components" | "references"
   | "summary" | "files" | "localRefs" | "incoming" | "outgoing" | "live" | "loading" | "error"
-  | "workspace" | "map" | "favorites" | "pureChaos";
+  | "workspace" | "map" | "favorites" | "pureChaos" | "responsibilities" | "relationships"
+  | "evidence" | "workflow";
 
 const ko = {
   title: "\ucf54\ub4dc \ud50c\ub85c\uc6b0 \ub9f5",
@@ -34,6 +35,10 @@ const ko = {
   map: "\ub9f5",
   favorites: "\uc8fc\uc694 \uc5ed\ud560",
   pureChaos: "\uc804\uccb4 \uad6c\uc870",
+  responsibilities: "\ud558\ub294 \uc77c",
+  relationships: "\uad00\uacc4 \uc124\uba85",
+  evidence: "\uadfc\uac70",
+  workflow: "\uc791\ub3d9 \ud750\ub984",
   roleNames: {
     automation: "\uc2e4\ud589 \uc2a4\ud06c\ub9bd\ud2b8",
     backend: "\ubc31\uc5d4\ub4dc",
@@ -79,6 +84,10 @@ const en = {
   map: "Map",
   favorites: "Favorites",
   pureChaos: "Full structure",
+  responsibilities: "Responsibilities",
+  relationships: "Relationships",
+  evidence: "Evidence",
+  workflow: "Workflow",
   roleNames: {
     automation: "run scripts",
     backend: "backend",
