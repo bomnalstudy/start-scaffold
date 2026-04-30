@@ -2,10 +2,10 @@
 param(
     [ValidateSet("session-guard", "code-rules", "token-ops", "worklog", "all")]
     [string]$Pipeline = "all",
-
     [string]$Root = (Split-Path -Parent $PSScriptRoot),
     [string]$PlanPath = "templates/orchestration-plan.md",
     [string]$WorklogPath = "",
+    [switch]$SkipCodeFlowMap,
     [switch]$EmitJson
 )
 
@@ -35,6 +35,22 @@ function Invoke-Checker {
         Write-Host ""
         Write-Host "Pipeline failed at: $CheckerName"
         exit $LASTEXITCODE
+    }
+}
+
+function Update-CodeFlowMap {
+    if ($SkipCodeFlowMap -or $EmitJson) { return }
+    $flowScript = Join-Path $PSScriptRoot "analyze-code-flow.ps1"
+    if (-not (Test-Path -LiteralPath $flowScript)) {
+        Write-Host ""
+        Write-Host "Code flow map skipped: analyzer not found."
+        return
+    }
+    Invoke-Stage -Name "Update Code Flow Map" -Action {
+        & $flowScript -Root $Root
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Code flow map refresh failed. Pipeline checks already passed; rerun analyzer after fixing the script."
+        }
     }
 }
 
@@ -280,3 +296,5 @@ switch ($Pipeline) {
         }
     }
 }
+
+Update-CodeFlowMap

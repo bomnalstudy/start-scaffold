@@ -1,6 +1,7 @@
 .local/
 handoff/
 .graveyard/
+docs/generated/
 .env
 .env.local
 .env.*.local

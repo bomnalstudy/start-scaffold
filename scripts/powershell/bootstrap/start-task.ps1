@@ -63,6 +63,18 @@ try {
 }
 Write-Host ""
 
+Write-Host "Refreshing code flow map..."
+$codeFlowAnalyzer = Join-Path $scriptsRoot "analyze-code-flow.ps1"
+try {
+    & $codeFlowAnalyzer -Root $root
+} catch {
+    throw "Failed to generate code flow map. $($_.Exception.Message)"
+}
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to generate code flow map."
+}
+Write-Host ""
+
 $contextPicker = Join-Path $scriptsRoot "powershell\context\select-context-pack.ps1"
 & $contextPicker -Agent $Agent -Pack $Pack
 

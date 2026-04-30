@@ -1,0 +1,18 @@
+{
+  "name": "vibe-coding-start-scaffold",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "flow:dev": "vite --config apps/code-flow-board/vite.config.ts",
+    "flow:build": "vite build --config apps/code-flow-board/vite.config.ts",
+    "flow:preview": "vite preview --config apps/code-flow-board/vite.config.ts"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "elkjs": "^0.10.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^6.4.2"
+  }
+}

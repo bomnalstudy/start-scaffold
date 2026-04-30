@@ -8,6 +8,7 @@ Use this document when designing or refactoring orchestrator and harness folders
 - keep shared state ownership clear
 - separate orchestration flow from domain logic
 - make pipeline handoff paths readable and version-safe
+- make cloned project structure visible through generated code flow maps before broad changes
 
 ## Top-Level Rule
 
@@ -79,6 +80,12 @@ orchestrators/
 - reusable scenarios and fixtures
 - validation rules for orchestrator handoff behavior
 - pass/fail assertions separated from orchestration flow
+
+### code flow map
+
+- use `scripts/analyze-code-flow.ps1` to generate `docs/generated/code-flow.mmd` and `docs/generated/code-flow.json`
+- treat the generated flow as an onboarding and navigation artifact for unfamiliar cloned projects
+- keep static scan results separate from hand-authored architecture docs
 
 ## Avoid
 

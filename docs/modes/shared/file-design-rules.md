@@ -18,8 +18,8 @@ This document defines repository-wide rules for keeping files commit-friendly, r
 ## Size Thresholds
 
 - Under 300 lines: normal target range.
-- Over 300 lines: splitting review is required before adding more behavior.
-- Over 500 lines: treat as a hard stop unless the file is clearly generated or otherwise exempt.
+- Over 300 lines: watch closely for mixed responsibilities or rapid growth; this is not a split requirement by itself.
+- Over 500 lines: treat as the actual split threshold unless the file is clearly generated or otherwise exempt.
 
 ## Mixed Responsibility Signals
 

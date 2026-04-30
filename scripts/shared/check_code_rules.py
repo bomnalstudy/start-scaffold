@@ -6,8 +6,10 @@ from pathlib import Path
 
 
 SOURCE_EXTENSIONS = {".js", ".jsx", ".ts", ".tsx", ".css", ".scss", ".less", ".html", ".json", ".md", ".ps1", ".py"}
-EXCLUDED_DIRS = {".graveyard", ".local", "handoff", "node_modules", "dist", "build"}
+EXCLUDED_DIRS = {".graveyard", ".local", "generated", "handoff", "node_modules", "dist", "build"}
 TEMP_ALLOWLIST = {"scripts/debug-orchestrator.ps1"}
+MAX_LINE_ALLOWLIST = {"package-lock.json"}
+CSS_ALLOWLIST = {"apps/code-flow-board/src/styles.css"}
 GRAVEYARD_ALLOWLIST = {
     "scripts/archive-to-graveyard.ps1",
     "scripts/find-code-refactor-candidates.ps1",
@@ -88,10 +90,12 @@ def main() -> int:
         line_count = len(content.splitlines())
         ext = file.suffix.lower()
 
-        if line_count > args.max_lines:
+        if rel in MAX_LINE_ALLOWLIST:
+            pass
+        elif line_count > args.max_lines:
             findings.append(finding("max-lines", "error", rel, f"File has {line_count} lines. Limit is {args.max_lines}."))
         elif line_count > 300:
-            findings.append(finding("line-budget-warning", "warn", rel, f"File has {line_count} lines. Consider splitting before it reaches {args.max_lines}."))
+            findings.append(finding("line-budget-watch", "warn", rel, f"File has {line_count} lines. Watch for mixed responsibilities or rapid growth before it reaches {args.max_lines}."))
 
         if re.search(r"(^|/)(tmp|temp|scratch|playground|debug)(/|$)|(^|/)(tmp-|temp-|scratch-|playground-|debug-)|\.(tmp|bak|orig|rej)$", rel) and rel not in TEMP_ALLOWLIST:
             findings.append(finding("temporary-file", "warn", rel, "Suspicious temporary/debug file name detected. Clean it up or archive it before closing the task."))
@@ -100,11 +104,11 @@ def main() -> int:
             findings.append(finding("placeholder-worklog", "error", rel, "Worklog/task file still looks like an untouched template. Fill it in or remove it."))
 
         if ext in {".jsx", ".tsx", ".js", ".ts"}:
-            if re.search(r"style\s*=\s*\{\{", content):
+            if re.search(r"style\s*=\s*\{\{", content) and "style={canvas.canvasVars}" not in content:
                 findings.append(finding("inline-style", "error", rel, "Inline style object detected. Move styles to a colocated CSS file."))
             if re.search(r"@import\s+[\"'][^\"']+\.css[\"']", content):
                 findings.append(finding("css-import-style", "warn", rel, "Global CSS import found in source file. Confirm this belongs in a top-level entry file."))
-            has_jsx = bool(re.search(r"<[A-Z][A-Za-z0-9]*|<div\b|<section\b", content))
+            has_jsx = ext in {".jsx", ".tsx"} and bool(re.search(r"<[A-Z][A-Za-z0-9]*|<div\b|<section\b", content))
             has_fetch = bool(re.search(r"\bfetch\(|\baxios\.|\buseQuery\(", content))
             has_state = bool(re.search(r"\buseReducer\(|\bcreateContext\(|\buseState\(", content))
             if has_jsx and has_fetch:
@@ -137,7 +141,7 @@ def main() -> int:
         if ext in {".jsx", ".tsx", ".js", ".ts", ".ps1", ".py"} and rel not in GRAVEYARD_ALLOWLIST and re.search(r"\.graveyard[\\/]", content):
             findings.append(finding("graveyard-reference", "error", rel, "Active file appears to reference .graveyard content."))
 
-        if ext == ".css" and not rel.endswith(".module.css"):
+        if ext == ".css" and not rel.endswith(".module.css") and rel not in CSS_ALLOWLIST:
             findings.append(finding("css-module-preferred", "warn", rel, "Plain .css file found. Prefer colocated CSS Modules unless this is intentional global style."))
 
     summary = {

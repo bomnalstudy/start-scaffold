@@ -7,12 +7,14 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 PIPELINE="all"
 PLAN_PATH="templates/orchestration-plan.md"
 WORKLOG_PATH=""
+SKIP_CODE_FLOW_MAP="false"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --pipeline) PIPELINE="$2"; shift 2 ;;
     --plan-path) PLAN_PATH="$2"; shift 2 ;;
     --worklog-path) WORKLOG_PATH="$2"; shift 2 ;;
+    --skip-code-flow-map) SKIP_CODE_FLOW_MAP="true"; shift ;;
     *) echo "Unknown argument: $1" >&2; exit 1 ;;
   esac
 done
@@ -64,3 +66,8 @@ case "${PIPELINE}" in
     exit 1
     ;;
 esac
+
+if [[ "${SKIP_CODE_FLOW_MAP}" != "true" ]]; then
+  stage "Update Code Flow Map"
+  "${SCRIPT_DIR}/analyze-code-flow.sh"
+fi

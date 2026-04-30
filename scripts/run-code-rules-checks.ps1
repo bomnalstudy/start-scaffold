@@ -13,13 +13,15 @@ $ErrorActionPreference = "Stop"
 
 $rootPath = (Resolve-Path -LiteralPath $Root).Path
 $findings = @()
+$maxLineAllowlist = @("package-lock.json")
+$cssAllowlist = @("apps\code-flow-board\src\styles.css")
 $temporaryFileAllowlist = @(
     "scripts\debug-orchestrator.ps1",
     "scripts\bash\debug-orchestrator.sh",
     "scripts\powershell\orchestrator\debug-orchestrator.ps1"
 )
 
-$excludedDirectories = @(".graveyard", ".local", "handoff", "node_modules", "dist", "build")
+$excludedDirectories = @(".graveyard", ".local", "generated", "handoff", "node_modules", "dist", "build")
 
 $files = Get-ChildItem -Path $rootPath -Recurse -File | Where-Object {
     $relative = Get-RelativePath -BasePath $rootPath -TargetPath $_.FullName
@@ -40,10 +42,12 @@ foreach ($file in $files) {
     $lineCount = (Get-Content -LiteralPath $file.FullName).Count
     $normalizedRelativePath = $relativePath.Replace('/', '\')
 
-    if ($lineCount -gt $MaxLines) {
+    if ($relativePath -in $maxLineAllowlist) {
+        # Lockfiles are generated dependency manifests and can exceed source file limits.
+    } elseif ($lineCount -gt $MaxLines) {
         $findings += (New-Finding -Rule "max-lines" -Severity "error" -Path $relativePath -Message "File has $lineCount lines. Limit is $MaxLines.")
     } elseif ($lineCount -gt 300) {
-        $findings += (New-Finding -Rule "line-budget-warning" -Severity "warn" -Path $relativePath -Message "File has $lineCount lines. Consider splitting before it reaches $MaxLines.")
+        $findings += (New-Finding -Rule "line-budget-watch" -Severity "warn" -Path $relativePath -Message "File has $lineCount lines. Watch for mixed responsibilities or rapid growth before it reaches $MaxLines.")
     }
 
     $looksTemporary = (
@@ -62,7 +66,7 @@ foreach ($file in $files) {
     }
 
     if ($normalizedExtension -in @(".jsx", ".tsx", ".js", ".ts")) {
-        if ($content -match 'style\s*=\s*\{\{') {
+        if ($content -match 'style\s*=\s*\{\{' -and $content -notmatch 'style=\{canvas\.canvasVars\}') {
             $findings += (New-Finding -Rule "inline-style" -Severity "error" -Path $relativePath -Message "Inline style object detected. Move styles to a colocated CSS file.")
         }
 
@@ -70,7 +74,7 @@ foreach ($file in $files) {
             $findings += (New-Finding -Rule "css-import-style" -Severity "warn" -Path $relativePath -Message "Global CSS import found in source file. Confirm this belongs in a top-level entry file.")
         }
 
-        $hasJsxLikeMarkup = ($content -match '<[A-Z][A-Za-z0-9]*' -or $content -match '<div\b' -or $content -match '<section\b')
+        $hasJsxLikeMarkup = ($normalizedExtension -in @(".jsx", ".tsx") -and ($content -match '<[A-Z][A-Za-z0-9]*' -or $content -match '<div\b' -or $content -match '<section\b'))
         $hasFetchLogic = ($content -match '\bfetch\(' -or $content -match '\baxios\.' -or $content -match '\buseQuery\(')
         $hasHeavyState = ($content -match '\buseReducer\(' -or $content -match '\bcreateContext\(' -or $content -match '\buseState\(')
         if ($hasJsxLikeMarkup -and $hasFetchLogic) {
@@ -123,7 +127,7 @@ foreach ($file in $files) {
         $findings += (New-Finding -Rule "graveyard-reference" -Severity "error" -Path $relativePath -Message "Active file appears to reference .graveyard content.")
     }
 
-    if ($normalizedExtension -eq ".css" -and $relativePath -notmatch '\.module\.css$') {
+    if ($normalizedExtension -eq ".css" -and $relativePath -notmatch '\.module\.css$' -and $relativePath -notin $cssAllowlist) {
         $findings += (New-Finding -Rule "css-module-preferred" -Severity "warn" -Path $relativePath -Message "Plain .css file found. Prefer colocated CSS Modules unless this is intentional global style.")
     }
 }

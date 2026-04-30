@@ -17,7 +17,8 @@ Read first:
 8. `docs/modes/orchestrator/reliability-patterns.md`
 9. `docs/modes/orchestrator/orchestration-patterns.md`
 10. `docs/modes/orchestrator/session-guard.md`
-11. the current task plan and worklog
+11. `docs/modes/orchestrator/code-flow-map.md`
+12. the current task plan and worklog
 
 Focus on:
 
@@ -30,5 +31,6 @@ Focus on:
 - folder and responsibility boundaries
 - stage handoff clarity
 - pipeline-safe artifact naming
+- generated code flow maps for unfamiliar cloned projects
 
 Treat artifact version naming as a first-class concern.
