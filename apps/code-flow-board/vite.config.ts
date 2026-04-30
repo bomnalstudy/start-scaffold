@@ -37,6 +37,11 @@ function shouldIgnore(filePath: string) {
   return [...ignoredParts].some((part) => relative === part || relative.startsWith(`${part}/`));
 }
 
+function isFlowDataFile(filePath: string) {
+  const relative = path.relative(targetRoot, filePath).replaceAll("\\", "/");
+  return relative === "docs/generated/code-flow.json" || relative === "docs/generated/code-flow-memory.json";
+}
+
 function runAnalyzer() {
   return new Promise<void>((resolve, reject) => {
     const python = process.platform === "win32" ? "python" : "python3";
@@ -173,6 +178,10 @@ function flowBoardPlugin() {
       });
 
       server.watcher.on("change", (filePath) => {
+        if (disableRefresh && isFlowDataFile(filePath)) {
+          clients.forEach((client) => client.write(`event: flow-update\ndata: ${Date.now()}\n\n`));
+          return;
+        }
         if (shouldIgnore(filePath)) return;
         if (disableRefresh) return;
         clearTimeout(timer);

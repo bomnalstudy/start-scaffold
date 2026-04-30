@@ -90,6 +90,7 @@ Users need to keep the flowchart open while vibe-coding. A static HTML file requ
 - Added graph-quality selection so a later AI merge cannot replace a better branched flowchart with a flatter linear chain.
 - Changed AI merge from whole-flow rewriting to append-only patches (`addNodes`, `addEdges`, `updateNodes`) so existing loops and branches are preserved by default.
 - Locked existing flow nodes and edges during AI patching; the AI may inspect them for relationship decisions but may not edit their labels, summaries, metadata, or structure.
+- Kept read-only live board mode reactive by emitting browser update events when generated flow JSON files change, without letting the board trigger a new analyzer or AI run.
 
 ## Remaining Risk
 
