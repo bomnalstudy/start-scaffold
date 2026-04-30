@@ -5,6 +5,7 @@ const elk = new ELK();
 const nodeWidth = 250;
 const nodeHeight = 88;
 const nodeExtraHeight = 18;
+const sequenceBadgeHeight = 28;
 const supportingRoles = new Set<Role>(["docs", "skill"]);
 
 function fallbackFlow(data: CodeFlowData): InferredFlow {
@@ -50,6 +51,7 @@ function toBoardNode(data: CodeFlowData, node: InferredFlowNode): BoardNode {
     label: node.label,
     role: node.role,
     kind: node.type,
+    sequence: sequenceForNode(node, sampleFiles),
     fileCount: fileCountForNode(data, node, sampleFiles),
     sampleFiles,
     evidence: node.evidence?.slice(0, 4),
@@ -68,6 +70,19 @@ function toBoardNode(data: CodeFlowData, node: InferredFlowNode): BoardNode {
     width: nodeWidth,
     height: nodeHeight,
   };
+}
+
+function sequenceForNode(node: InferredFlowNode, files: string[]): BoardNode["sequence"] {
+  const text = [node.label, node.summary ?? "", ...files].join(" ");
+  const step = text.match(/\b(0?\d{1,2}b?)\b/)?.[1];
+  if (step && (text.includes("/stages/") || /단계|stage/i.test(text))) {
+    return { kind: "step", step: step.padStart(step.includes("b") ? 3 : 2, "0") };
+  }
+  const total = text.match(/(\d+)\s*단계/)?.[1];
+  if (total && /순차|단계 실행|stage/i.test(text)) {
+    return { kind: "sequence", total: Number(total) };
+  }
+  return undefined;
 }
 
 function matchesNode(node: BoardNode, query: string, role: string) {
@@ -107,7 +122,11 @@ export async function layoutFlow(data: CodeFlowData, query: string, role: string
       "elk.edgeRouting": "ORTHOGONAL",
       "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
     },
-    children: boardNodes.map((node) => ({ id: node.id, width: node.width, height: node.height + nodeExtraHeight })),
+    children: boardNodes.map((node) => ({
+      id: node.id,
+      width: node.width,
+      height: node.height + nodeExtraHeight + (node.sequence ? sequenceBadgeHeight : 0),
+    })),
     edges: flowEdges.map((edge, index) => ({
       id: `${edge.from}->${edge.to}:${index}`,
       sources: [edge.from],
@@ -121,7 +140,7 @@ export async function layoutFlow(data: CodeFlowData, query: string, role: string
     const node = nodeMap.get(item.id);
     if (!node) return;
     node.x = item.x ?? 0;
-    node.y = item.y ?? 0;
+    node.y = (item.y ?? 0) + (node.sequence ? sequenceBadgeHeight : 0);
   });
 
   const boardEdges: BoardEdge[] = (graph.edges ?? []).map((edge, index) => {

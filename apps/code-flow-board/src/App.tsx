@@ -142,9 +142,19 @@ function App() {
                   {node.kind === "subprocess" && <rect className="nodeInset" x={node.x + 10} y={node.y + 9} width={node.width - 20} height={node.height} rx="5" />}
                   <circle className="nodeIcon" cx={node.x + 22} cy={node.y + 22} r="12" />
                   <text className="nodeIconText" x={node.x + 22} y={node.y + 26}>{roleIcons[node.role]}</text>
+                  {node.sequence && (
+                    <g className={`sequenceBadge ${node.sequence.kind === "sequence" ? "sequenceParent" : ""}`}>
+                      <rect x={node.x + 12} y={node.y - 30} width="86" height="22" rx="11" />
+                      <text x={node.x + 55} y={node.y - 15}>
+                        {node.sequence.kind === "sequence" ? `${node.sequence.total ?? ""}${t("stepLabel")}` : `${t("stepLabel")} ${node.sequence.step}`}
+                      </text>
+                    </g>
+                  )}
                   <text className="nodeTitle" x={node.x + 42} y={node.y + 23}>{nodeTitle(node).slice(0, 24)}</text>
                   <text className="nodeMeta" x={node.x + 42} y={node.y + 43}>{roleLabel(node.role)} / {node.fileCount} {t("files")}</text>
-                  <text className="nodeBadge" x={node.x + 16} y={node.y + 70}>{node.sampleFiles[0]?.slice(0, 33) ?? `${t("references")}: ${refCount(node.id)}`}</text>
+                  <text className="nodeBadge" x={node.x + 16} y={node.y + 70}>
+                    {node.sequence?.kind === "sequence" ? t("sequenceFlow") : node.sampleFiles[0]?.slice(0, 33) ?? `${t("references")}: ${refCount(node.id)}`}
+                  </text>
                 </g>
               ))}
             </svg>
@@ -183,6 +193,7 @@ function App() {
                 <ul>{selectedNode.description.terms.map((item) => <li key={item}>{item}</li>)}</ul>
               </>
             ) : null}
+            {selectedNode.sequence ? <p className="sequenceNote">{selectedNode.sequence.kind === "sequence" ? `${t("sequenceFlow")}: ${selectedNode.sequence.total ?? ""}${t("stepLabel")}` : `${t("stepLabel")} ${selectedNode.sequence.step}`}</p> : null}
             <section className="insightCard">
               <h4>{t("connectedFlow")}</h4>
               {inboundEdges.length || outboundEdges.length ? (

@@ -49,6 +49,10 @@ marker path { fill: currentColor; }
 .nodeIconText { fill: var(--muted); font-size: 8px; font-weight: 900; text-anchor: middle; pointer-events: none; }
 .nodeTitle { fill: var(--text); font-size: 13px; font-weight: 800; pointer-events: none; }
 .nodeMeta, .nodeBadge { fill: var(--muted); font-size: 12px; font-weight: 600; pointer-events: none; }
+.sequenceBadge rect { fill: #fff7ed; stroke: #f2a93b; stroke-width: 1; }
+.sequenceBadge.sequenceParent rect { fill: #eef8ff; stroke: var(--blue); }
+.sequenceBadge text { fill: #7a4b00; font-size: 10px; font-weight: 900; text-anchor: middle; pointer-events: none; }
+.sequenceBadge.sequenceParent text { fill: #12608a; }
 .node-security .nodeIcon { fill: #fff1f1; stroke: #f0b8b8; }
 .node-orchestration .nodeIcon, .node-verification .nodeIcon { fill: #f3efff; stroke: #cab9f2; }
 .node-database .nodeIcon, .node-backend .nodeIcon, .node-repository .nodeIcon, .node-service .nodeIcon { fill: #eefaf3; stroke: #bfe7ce; }
@@ -66,6 +70,7 @@ marker path { fill: currentColor; }
 .details h4 { margin: 16px 0 8px; font-size: 13px; }
 .details p, .details li { color: var(--muted); font-size: 13px; line-height: 1.55; }
 .details ul { padding-left: 18px; }
+.sequenceNote { margin-top: 12px !important; border-left: 3px solid var(--orange); padding: 8px 10px; background: #fff7ed; color: #7a4b00 !important; font-weight: 800; }
 .insightCard, .stats article { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: #fff; }
 .progress { height: 7px; margin: 10px 0; overflow: hidden; border-radius: 999px; background: #edf1f5; }
 .progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--orange), var(--green)); }

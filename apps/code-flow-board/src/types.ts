@@ -98,6 +98,11 @@ export type BoardNode = {
   label: string;
   role: Role | "project";
   kind: "start" | "end" | "process" | "decision" | "data" | "io" | "document" | "subprocess";
+  sequence?: {
+    step?: string;
+    total?: number;
+    kind: "step" | "sequence";
+  };
   fileCount: number;
   sampleFiles: string[];
   evidence?: string[];

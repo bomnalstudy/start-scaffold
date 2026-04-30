@@ -102,6 +102,8 @@ Users need to keep the flowchart open while vibe-coding. A static HTML file requ
 - Made the static analyzer add its generated output directory to the target project's `.gitignore` so flowchart artifacts stay out of commits.
 - Improved canvas zoom behavior so Alt+wheel zooms around the current mouse pointer, supports up to 500%, and keeps SVG node size independent from graph node count.
 - Increased flow layout spacing and switched edge rendering to ELK's routed orthogonal points so connectors keep more distance from node shapes.
+- Added sequence badges for numbered stage nodes and parent sequence nodes so users can visually recognize ordered orchestrator flows.
+- Moved sequence badges outside the node body and reserved layout space for them so stage labels do not overlap node text.
 
 ## Remaining Risk
 
