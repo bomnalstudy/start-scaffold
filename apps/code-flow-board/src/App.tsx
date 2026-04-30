@@ -58,7 +58,7 @@ function App() {
   const sourceLabel = selectedNode?.description?.analysisSource === "local-ai" ? "Local AI" : "";
   const graphBounds = useGraphBounds(layout?.nodes);
   const progressText = data?.flowProgress
-    ? `${t("progress")}: ${data.flowProgress.completedBatches}/${data.flowProgress.totalBatches} ${data.flowProgress.status}`
+    ? `${t("progress")}: ${data.flowProgress.completedBatches}/${data.flowProgress.totalBatches} ${data.flowProgress.status}${data.flowProgress.visibleMergeBatch ? ` · flow ${data.flowProgress.visibleMergeBatch}` : ""}`
     : "";
 
   return (

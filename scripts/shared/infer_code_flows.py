@@ -7,8 +7,8 @@ from pathlib import Path
 
 from ai_flow_code_map import build_component_context, estimate_file_map_chars
 from ai_flow_io import chunked, clear_stale_lock, compact_batch as compact_batch_result, compact_flow, run_ai, save_batch, save_merge, save_prompt
-from ai_flow_normalize import normalize_flow
-from ai_flow_progress import completed_batch_count, flow_from_latest_merge, progress
+from ai_flow_normalize import apply_flow_patch, choose_better_flow, normalize_flow
+from ai_flow_progress import completed_batch_count, flow_from_latest_merge, latest_successful_merge, progress
 
 
 SUPPORTING_ROLES = {"docs", "skill"}
@@ -249,7 +249,7 @@ def build_merge_prompt(flow: dict, language: str, current_flow: dict | None, nex
     compact_current = json.dumps(compact_flow(current_flow), ensure_ascii=False, indent=2)
     compact_next_batch = json.dumps(compact_batch_result(next_batch), ensure_ascii=False, indent=2)
     return f"""
-You are incrementally assembling a true flowchart from one batch at a time.
+You are creating an append-only patch for an existing flowchart.
 
 Audience:
 - The reader may not know programming.
@@ -263,13 +263,14 @@ Rules:
 - Keep Markdown-derived information behind code evidence; do not let .md files decide the main result flow.
 - Use only the current flow and the next batch result.
 - Build runtime or work-process flows, not a dependency map.
-- Prefer one main flow with 6 to 12 nodes while batches are still running.
 - Keep common flowchart semantics: start, process, decision, io, data, subprocess, document, end.
-- Every node must include files and evidence.
-- Edges must explain the handoff or condition.
-- Keep good existing nodes from the current flow.
-- Add, replace, or connect nodes only when the next batch gives concrete evidence.
-- This is an intermediate result, so it can be incomplete, but it must remain valid JSON.
+- Never rewrite the whole flow.
+- Existing nodes and edges are locked. Read them only to decide relationships.
+- Never edit existing node labels, summaries, responsibilities, terms, files, or evidence.
+- Never delete existing nodes or edges.
+- Never remove existing loops, branches, joins, or handoffs.
+- Only add new nodes and new edges.
+- If the next batch does not add a clear runtime step, return empty arrays.
 - Keep the JSON compact. Do not expand descriptions unless the new batch changes the meaning.
 - Write node summaries and responsibilities for a non-programmer who does not know code.
 - Do not put function names, SQL, table names, or file paths in summary/responsibilities. Put those in evidence.
@@ -277,34 +278,30 @@ Rules:
 
 Return this exact JSON shape:
 {{
-  "flows": [
+  "name": "optional workflow name when current flow is empty",
+  "summary": "optional workflow summary when current flow is empty",
+  "addNodes": [
     {{
-      "id": "main",
-      "name": "short workflow name",
-      "summary": "one plain sentence about what this workflow does",
-      "nodes": [
-        {{
-          "id": "stable-kebab-id",
-          "type": "start|process|decision|io|data|subprocess|document|end",
-          "label": "short box label",
-          "role": "entrypoint|ui|backend|security|orchestration|service|domain|repository|database|automation|verification|config|project",
-          "summary": "what this exact step does, in plain language",
-          "responsibilities": ["plain-language thing this step does for the product or operator"],
-          "terms": ["technical term: simple meaning in this project"],
-          "files": ["relative/path.ts"],
-          "evidence": ["concrete evidence from batch results"]
-        }}
-      ],
-      "edges": [
-        {{
-          "from": "node-id",
-          "to": "node-id",
-          "label": "condition or handoff label",
-          "reason": "why these steps are connected"
-        }}
-      ]
+      "id": "stable-kebab-id",
+      "type": "start|process|decision|io|data|subprocess|document|end",
+      "label": "short box label",
+      "role": "entrypoint|ui|backend|security|orchestration|service|domain|repository|database|automation|verification|config|project",
+      "summary": "what this exact step does, in plain language",
+      "responsibilities": ["plain-language thing this step does for the product or operator"],
+      "terms": ["technical term: simple meaning in this project"],
+      "files": ["relative/path.ts"],
+      "evidence": ["concrete evidence from batch results"]
     }}
-  ]
+  ],
+  "addEdges": [
+    {{
+      "from": "existing-or-new-node-id",
+      "to": "existing-or-new-node-id",
+      "label": "condition or handoff label",
+      "reason": "why these steps are connected"
+    }}
+  ],
+  "updateNodes": []
 }}
 
 Project root:
@@ -326,6 +323,7 @@ def write_partial_flow(flow_path: Path, base_flow: dict, raw_flow: dict, languag
     partial["flowLanguage"] = language
     partial["flowComplete"] = False
     partial["flowProgress"] = progress("running", language, completed, total, plan_key, message or f"AI batch {completed} of {total} merged.")
+    partial["flowProgress"]["visibleMergeBatch"] = completed
     write_flow(flow_path, partial)
     write_memory(flow_path, partial)
 
@@ -340,6 +338,9 @@ def write_progress_only(flow_path: Path, base_flow: dict, language: str, complet
     partial["flowLanguage"] = language
     partial["flowComplete"] = False
     partial["flowProgress"] = progress("running", language, completed, total, plan_key, message)
+    visible_merge, _ = latest_successful_merge(flow_path)
+    if visible_merge:
+        partial["flowProgress"]["visibleMergeBatch"] = visible_merge
     write_flow(flow_path, partial)
     if partial.get("flows"):
         write_memory(flow_path, partial)
@@ -376,7 +377,9 @@ def infer_and_merge_sequentially(command: str, flow: dict, flow_path: Path, root
         prompt = build_merge_prompt(flow, language, current, batch_result)
         save_prompt(work_dir, f"prompt-merge-{index:03}.md", prompt)
         try:
-            current = run_ai(command, prompt, timeout)
+            patch = run_ai(command, prompt, timeout)
+            candidate = apply_flow_patch(current, patch)
+            current = choose_better_flow(current, candidate)
             save_merge(work_dir, index, current)
             write_partial_flow(flow_path, flow, current, language, index, len(batches), plan_key)
             print(f"AI flow merge {index}/{len(batches)}: saved partial flow")

@@ -86,6 +86,10 @@ Users need to keep the flowchart open while vibe-coding. A static HTML file requ
 - Added a progress plan key so old partial runs are not resumed after token-budget or batching settings change.
 - Added merge-failure tolerance so a saved partial flow can keep scanning later batches even when one local-AI merge call fails.
 - Fixed progress-only writes so they preserve the latest successful merge instead of reverting the visible flowchart to an older partial graph.
+- Added `visibleMergeBatch` progress metadata so users can distinguish scanned batch progress from the latest successfully visible flowchart version.
+- Added graph-quality selection so a later AI merge cannot replace a better branched flowchart with a flatter linear chain.
+- Changed AI merge from whole-flow rewriting to append-only patches (`addNodes`, `addEdges`, `updateNodes`) so existing loops and branches are preserved by default.
+- Locked existing flow nodes and edges during AI patching; the AI may inspect them for relationship decisions but may not edit their labels, summaries, metadata, or structure.
 
 ## Remaining Risk
 

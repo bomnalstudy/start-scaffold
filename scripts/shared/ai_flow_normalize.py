@@ -29,6 +29,80 @@ def normalize_flow(raw: dict) -> list[dict]:
     return normalized
 
 
+def graph_quality(flow: dict | None) -> int:
+    if not flow:
+        return -1
+    flows = normalize_flow(flow)
+    if not flows:
+        return -1
+    item = flows[0]
+    nodes = item.get("nodes", [])
+    edges = item.get("edges", [])
+    node_ids = {node["id"] for node in nodes}
+    out_degree = {node_id: 0 for node_id in node_ids}
+    in_degree = {node_id: 0 for node_id in node_ids}
+    for edge in edges:
+        if edge["from"] in out_degree:
+            out_degree[edge["from"]] += 1
+        if edge["to"] in in_degree:
+            in_degree[edge["to"]] += 1
+    branch_count = sum(1 for value in out_degree.values() if value > 1)
+    join_count = sum(1 for value in in_degree.values() if value > 1)
+    start_count = sum(1 for node in nodes if node.get("type") == "start")
+    end_count = sum(1 for node in nodes if node.get("type") == "end")
+    linear_penalty = max(0, len(nodes) - branch_count - join_count - 6)
+    return len(nodes) * 3 + len(edges) * 2 + branch_count * 8 + join_count * 4 + start_count + end_count - linear_penalty
+
+
+def choose_better_flow(current: dict | None, candidate: dict) -> dict:
+    if not current:
+        return candidate
+    current_score = graph_quality(current)
+    candidate_score = graph_quality(candidate)
+    return candidate if candidate_score >= current_score else current
+
+
+def apply_flow_patch(current: dict | None, patch: dict) -> dict:
+    if not current:
+        return patch_to_flow(patch)
+    flows = normalize_flow(current)
+    if not flows:
+        return patch_to_flow(patch)
+    flow = flows[0]
+    node_ids = {node["id"] for node in flow["nodes"]}
+    edge_keys = {(edge["from"], edge["to"], edge.get("label", "")) for edge in flow["edges"]}
+    for node in patch.get("addNodes", [])[:8]:
+        normalized_node = normalize_nodes({"nodes": [node]})
+        if normalized_node and normalized_node[0]["id"] not in node_ids:
+            flow["nodes"].append(normalized_node[0])
+            node_ids.add(normalized_node[0]["id"])
+    for edge in patch.get("addEdges", [])[:12]:
+        normalized = normalize_edges({"edges": [edge]}, node_ids)
+        if normalized:
+            item = normalized[0]
+            key = (item["from"], item["to"], item.get("label", ""))
+            if key not in edge_keys:
+                flow["edges"].append(item)
+                edge_keys.add(key)
+    return {"flows": [flow]}
+
+
+def patch_to_flow(patch: dict) -> dict:
+    return {
+        "flows": [
+            {
+                "id": "main",
+                "name": str(patch.get("name") or "Code workflow")[:80],
+                "summary": str(patch.get("summary") or "")[:500],
+                "nodes": normalize_nodes({"nodes": patch.get("addNodes", [])}),
+                "edges": [],
+            }
+        ]
+    }
+
+
+
+
 def normalize_nodes(item: dict) -> list[dict]:
     nodes = []
     seen = set()

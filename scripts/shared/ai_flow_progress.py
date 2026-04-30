@@ -25,9 +25,24 @@ def progress(status: str, language: str, completed: int, total: int, plan_key: s
     return payload
 
 
+def latest_successful_merge(flow_path: Path) -> tuple[int, Path | None]:
+    work_dir = flow_path.with_name("code-flow-work")
+    latest_index = 0
+    latest_path = None
+    for path in sorted(work_dir.glob("merge-*.json")):
+        try:
+            index = int(path.stem.split("-")[-1])
+        except ValueError:
+            continue
+        if index > latest_index:
+            latest_index = index
+            latest_path = path
+    return latest_index, latest_path
+
+
 def flow_from_latest_merge(flow_path: Path, base_flow: dict, language: str, completed: int, total: int, plan_key: str) -> dict:
-    merge_path = flow_path.with_name("code-flow-work") / f"merge-{completed:03}.json"
-    if completed > 0 and merge_path.exists():
+    latest_index, merge_path = latest_successful_merge(flow_path)
+    if merge_path:
         try:
             partial = dict(base_flow)
             partial["flows"] = normalize_flow(read_json(merge_path))
@@ -35,7 +50,8 @@ def flow_from_latest_merge(flow_path: Path, base_flow: dict, language: str, comp
             partial["flowGeneratedAt"] = datetime.now(timezone.utc).isoformat()
             partial["flowLanguage"] = language
             partial["flowComplete"] = False
-            partial["flowProgress"] = progress("running", language, completed, total, plan_key, f"AI batch {completed} of {total} merged.")
+            partial["flowProgress"] = progress("running", language, completed, total, plan_key, f"Latest visible flow is from successful merge {latest_index} of {total}.")
+            partial["flowProgress"]["visibleMergeBatch"] = latest_index
             return partial
         except Exception:
             pass

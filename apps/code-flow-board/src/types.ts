@@ -70,6 +70,7 @@ export type FlowProgress = {
   completedBatches: number;
   totalBatches: number;
   planKey?: string;
+  visibleMergeBatch?: number;
   updatedAt: string;
   message?: string;
   error?: string;
