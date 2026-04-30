@@ -46,14 +46,18 @@ function App() {
 
   const selectedNode = layout?.nodes.find((node) => node.id === selected) ?? layout?.nodes[0];
   const currentFlow = layout?.flow;
-  const inbound = layout?.edges.filter((edge) => edge.to === selectedNode?.id).length ?? 0;
-  const outbound = layout?.edges.filter((edge) => edge.from === selectedNode?.id).length ?? 0;
+  const inboundEdges = layout?.edges.filter((edge) => edge.to === selectedNode?.id) ?? [];
+  const outboundEdges = layout?.edges.filter((edge) => edge.from === selectedNode?.id) ?? [];
+  const nodeById = new Map(layout?.nodes.map((node) => [node.id, node]) ?? []);
   const refCount = (nodeId: string) => {
     if (!layout) return 0;
     return layout.edges.filter((edge) => edge.to === nodeId || edge.from === nodeId).length;
   };
   const nodeTitle = (node: BoardNode) => node.id.startsWith("role:") ? roleLabel(node.role as Role) : node.label;
-  const refLevel = Math.min(5, Math.max(1, Math.ceil((inbound + outbound) / 3)));
+  const flowLinkText = (id: string, label = "") => {
+    const node = nodeById.get(id);
+    return `${node ? nodeTitle(node) : id}${label ? ` - ${label}` : ""}`;
+  };
   const summary = selectedNode?.description?.summary ?? roleSummary(selectedNode?.role ?? "domain", language);
   const sourceLabel = selectedNode?.description?.analysisSource === "local-ai" ? "Local AI" : "";
   const graphBounds = useGraphBounds(layout?.nodes);
@@ -174,9 +178,23 @@ function App() {
               </>
             ) : null}
             <section className="insightCard">
-              <h4>{t("localRefs")}</h4>
-              <div className={`progress level${refLevel}`}><span /></div>
-              <p>{outbound} {t("outgoing")} / {inbound} {t("incoming")}</p>
+              <h4>{t("connectedFlow")}</h4>
+              {inboundEdges.length || outboundEdges.length ? (
+                <>
+                  {inboundEdges.length ? (
+                    <>
+                      <p><strong>{t("previousSteps")}</strong></p>
+                      <ul>{inboundEdges.map((edge) => <li key={edge.id}>{flowLinkText(edge.from, edge.label)}</li>)}</ul>
+                    </>
+                  ) : null}
+                  {outboundEdges.length ? (
+                    <>
+                      <p><strong>{t("nextSteps")}</strong></p>
+                      <ul>{outboundEdges.map((edge) => <li key={edge.id}>{flowLinkText(edge.to, edge.label)}</li>)}</ul>
+                    </>
+                  ) : null}
+                </>
+              ) : <p>{t("noConnectedSteps")}</p>}
             </section>
             {selectedNode.description?.relationships.length ? (
               <>

@@ -91,6 +91,15 @@ Users need to keep the flowchart open while vibe-coding. A static HTML file requ
 - Changed AI merge from whole-flow rewriting to append-only patches (`addNodes`, `addEdges`, `updateNodes`) so existing loops and branches are preserved by default.
 - Locked existing flow nodes and edges during AI patching; the AI may inspect them for relationship decisions but may not edit their labels, summaries, metadata, or structure.
 - Kept read-only live board mode reactive by emitting browser update events when generated flow JSON files change, without letting the board trigger a new analyzer or AI run.
+- Added ordered-stage hints to the compact repo map and tightened AI prompts so explicit orchestrator stage sequences are shown as separate flowchart nodes instead of being collapsed into one summary edge.
+- Added orchestrator hints to the compact repo map and tightened AI prompts so role/domain orchestrators are not hidden behind a larger parent workflow node.
+- Raised AI flow normalization and merge caps so successful orchestrator/stage candidates are not silently truncated back to the older 20-node view.
+- Added retrying file replacement for generated flow JSON writes so the live board can keep reading while AI analysis updates the same files on Windows.
+- Raised graph structure caps to 1000 nodes/edges/candidates/handoffs so large orchestrator workflows are preserved instead of being hidden by small defaults.
+- Raised the AI batch prompt candidate cap to 1000 so stage and role orchestrator discovery is not limited before merge.
+- Scoped latest-merge selection to the active batch count so a new gap-only run does not get overwritten by an older full-run `merge-019.json`.
+- Isolated AI flow work files by plan key so gap-only reanalysis never reuses stale merge files from an older full-run plan.
+- Made the static analyzer add its generated output directory to the target project's `.gitignore` so flowchart artifacts stay out of commits.
 
 ## Remaining Risk
 

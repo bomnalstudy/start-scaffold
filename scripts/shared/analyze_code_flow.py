@@ -255,6 +255,20 @@ def render_mermaid(flow: dict, max_components: int, max_dependencies: int) -> st
     return "\n".join(lines) + "\n"
 
 
+def ensure_generated_gitignore(root: Path, output_dir: Path) -> None:
+    try:
+        relative = output_dir.relative_to(root).as_posix().rstrip("/") + "/"
+    except ValueError:
+        return
+    gitignore_path = root / ".gitignore"
+    existing = gitignore_path.read_text(encoding="utf-8", errors="ignore") if gitignore_path.exists() else ""
+    patterns = {line.strip() for line in existing.splitlines()}
+    if relative in patterns:
+        return
+    prefix = "" if not existing or existing.endswith("\n") else "\n"
+    gitignore_path.write_text(f"{existing}{prefix}{relative}\n", encoding="utf-8")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Analyze a project and emit a role flow map.")
     parser.add_argument("--root", default=".")
@@ -267,6 +281,7 @@ def main() -> int:
     root = Path(args.root).resolve()
     output_dir = (root / args.output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
+    ensure_generated_gitignore(root, output_dir)
 
     flow = build_flow(root)
     json_path = output_dir / "code-flow.json"

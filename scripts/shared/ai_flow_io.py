@@ -35,12 +35,27 @@ def run_ai(command: str, prompt: str, timeout: int) -> dict:
     if completed.returncode != 0:
         raise RuntimeError(stderr or f"AI command exited with {completed.returncode}")
 
-    start = stdout.find("{")
-    end = stdout.rfind("}")
-    if start < 0 or end < start:
+    parsed = parse_json_object(stdout)
+    if parsed is None:
         detail = stdout or stderr or "(empty output)"
         raise RuntimeError(f"AI command did not return JSON. Output: {detail[:1200]}")
-    return json.loads(stdout[start : end + 1])
+    if isinstance(parsed.get("result"), str):
+        nested = parse_json_object(parsed["result"])
+        if nested is not None:
+            return nested
+    return parsed
+
+
+def parse_json_object(text: str) -> dict | None:
+    start = text.find("{")
+    end = text.rfind("}")
+    if start < 0 or end < start:
+        return None
+    try:
+        parsed = json.loads(text[start : end + 1])
+    except json.JSONDecodeError:
+        return None
+    return parsed if isinstance(parsed, dict) else None
 
 
 def chunked(items: list[dict], size: int) -> list[list[dict]]:
@@ -50,9 +65,9 @@ def chunked(items: list[dict], size: int) -> list[list[dict]]:
 def compact_batch(batch: dict) -> dict:
     return {
         "batch": batch.get("batch"),
-        "componentNames": batch.get("componentNames", [])[:4],
-        "candidates": [compact_node(item) for item in batch.get("candidates", [])[:6]],
-        "handoffs": batch.get("handoffs", [])[:4],
+        "componentNames": batch.get("componentNames", [])[:8],
+        "candidates": [compact_node(item) for item in batch.get("candidates", [])[:1000]],
+        "handoffs": batch.get("handoffs", [])[:1000],
     }
 
 
@@ -66,8 +81,8 @@ def compact_flow(flow: dict | None) -> dict:
                 "id": item.get("id", "main"),
                 "name": item.get("name", ""),
                 "summary": str(item.get("summary", ""))[:240],
-                "nodes": [compact_node(node) for node in item.get("nodes", [])[:8]],
-                "edges": [compact_edge(edge) for edge in item.get("edges", [])[:10]],
+                "nodes": [compact_node(node) for node in item.get("nodes", [])[:1000]],
+                "edges": [compact_edge(edge) for edge in item.get("edges", [])[:1000]],
             }
         )
     return {"flows": compacted}

@@ -2,12 +2,14 @@
 import argparse
 import json
 import os
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 from ai_flow_code_map import build_component_context, estimate_file_map_chars
+from ai_flow_gap_select import select_gap_components
 from ai_flow_io import chunked, clear_stale_lock, compact_batch as compact_batch_result, compact_flow, run_ai, save_batch, save_merge, save_prompt
-from ai_flow_normalize import apply_flow_patch, choose_better_flow, normalize_flow
+from ai_flow_normalize import apply_flow_patch, choose_better_flow, clean_id, normalize_flow
 from ai_flow_progress import completed_batch_count, flow_from_latest_merge, latest_successful_merge, progress
 
 
@@ -35,11 +37,11 @@ def write_flow(flow_path: Path, flow: dict) -> None:
     payload = json.dumps(flow, ensure_ascii=False, indent=2) + "\n"
     tmp_path = flow_path.with_suffix(".json.tmp")
     tmp_path.write_text(payload, encoding="utf-8")
-    tmp_path.replace(flow_path)
+    replace_with_retry(tmp_path, flow_path)
     data_js_path = flow_path.with_name("code-flow-data.js")
     data_js_tmp = data_js_path.with_suffix(".js.tmp")
     data_js_tmp.write_text("window.CODE_FLOW_DATA = " + json.dumps(flow, ensure_ascii=False, indent=2) + ";\n", encoding="utf-8")
-    data_js_tmp.replace(data_js_path)
+    replace_with_retry(data_js_tmp, data_js_path)
 
 
 def memory_path_for(flow_path: Path) -> Path:
@@ -57,7 +59,18 @@ def write_memory(flow_path: Path, flow: dict) -> None:
     memory_path = memory_path_for(flow_path)
     tmp_path = memory_path.with_suffix(".json.tmp")
     tmp_path.write_text(json.dumps(flow, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    tmp_path.replace(memory_path)
+    replace_with_retry(tmp_path, memory_path)
+
+
+def replace_with_retry(source: Path, target: Path, attempts: int = 12) -> None:
+    for index in range(attempts):
+        try:
+            source.replace(target)
+            return
+        except PermissionError:
+            if index == attempts - 1:
+                raise
+            time.sleep(0.25)
 
 
 def acquire_lock(work_dir: Path) -> Path:
@@ -201,7 +214,11 @@ Rules:
 - Do not invent steps outside this batch.
 - Do not make generic role summaries.
 - Extract concrete workflow candidates: starts, inputs, decisions, actions, data access, validation, and endings.
-- Return at most 2 candidate nodes per component and 6 candidate nodes for this batch.
+- Return at most 1000 candidate nodes for this batch.
+- Files under orchestrators/<name> define role or workflow control. Do not omit a visible role/domain orchestrator just because a larger parent orchestrator exists.
+- If the repo map shows "orchestrators", create a concrete candidate for each visible orchestrator unless it is clearly the same step as another candidate in this batch.
+- If the repo map shows "ordered stages", numbered stage files, or a build...Stages function, do not collapse them into one summary node. Create one candidate node for each concrete stage visible in this batch.
+- For stage orchestrators, preserve the stage order in handoffs. Example: stage 01 -> stage 02 -> stage 03.
 - If this batch does not show a runtime step, return an empty candidates array.
 - Include files and evidence for every candidate node.
 - Write summary and responsibilities for a non-programmer. Do not use function names, SQL, table names, or file paths there unless you explain what they mean.
@@ -272,6 +289,9 @@ Rules:
 - Only add new nodes and new edges.
 - If the next batch does not add a clear runtime step, return empty arrays.
 - Keep the JSON compact. Do not expand descriptions unless the new batch changes the meaning.
+- If the next batch contains role/domain orchestrators, add missing orchestrator nodes rather than representing them only as files or edge labels.
+- If the next batch contains ordered stages or numbered stage candidates, insert each missing stage as its own node instead of replacing them with a broad "steps happen" edge.
+- Do not create a shortcut edge that skips visible ordered stages unless it is an explicit error/branch path in the batch evidence.
 - Write node summaries and responsibilities for a non-programmer who does not know code.
 - Do not put function names, SQL, table names, or file paths in summary/responsibilities. Put those in evidence.
 - If a technical term is useful, keep it only when terms explains it in simple language.
@@ -328,8 +348,8 @@ def write_partial_flow(flow_path: Path, base_flow: dict, raw_flow: dict, languag
     write_memory(flow_path, partial)
 
 
-def write_progress_only(flow_path: Path, base_flow: dict, language: str, completed: int, total: int, plan_key: str, message: str) -> None:
-    partial = flow_from_latest_merge(flow_path, base_flow, language, completed, total, plan_key)
+def write_progress_only(flow_path: Path, base_flow: dict, language: str, completed: int, total: int, plan_key: str, message: str, work_dir: Path) -> None:
+    partial = flow_from_latest_merge(flow_path, base_flow, language, completed, total, plan_key, work_dir)
     if not partial.get("flows"):
         memory = load_memory(flow_path)
         if memory and memory.get("flows") and memory.get("flowLanguage") == language:
@@ -338,7 +358,7 @@ def write_progress_only(flow_path: Path, base_flow: dict, language: str, complet
     partial["flowLanguage"] = language
     partial["flowComplete"] = False
     partial["flowProgress"] = progress("running", language, completed, total, plan_key, message)
-    visible_merge, _ = latest_successful_merge(flow_path)
+    visible_merge, _ = latest_successful_merge(flow_path, total, work_dir)
     if visible_merge:
         partial["flowProgress"]["visibleMergeBatch"] = visible_merge
     write_flow(flow_path, partial)
@@ -349,31 +369,29 @@ def write_progress_only(flow_path: Path, base_flow: dict, language: str, complet
 def infer_and_merge_sequentially(command: str, flow: dict, flow_path: Path, root: Path, language: str, components: list[dict], max_files: int, batch_size: int, timeout: int, work_dir: Path, plan_key: str) -> dict:
     memory = load_memory(flow_path)
     memory_progress = memory.get("flowProgress", {}) if memory else {}
-    can_reuse_memory = bool(
-        memory
-        and memory.get("flowLanguage") == language
-        and memory_progress.get("planKey") == plan_key
-        and int(memory_progress.get("completedBatches", 0) or 0) > 0
-    )
+    can_reuse_memory = bool(memory and memory.get("flowLanguage") == language and memory.get("flows"))
     current = {"flows": memory.get("flows", [])} if can_reuse_memory else None
     batches = chunked(components, batch_size)
     if not batches:
+        if current:
+            write_partial_flow(flow_path, flow, current, language, 0, 0, plan_key, "No uncovered orchestrator or stage gaps were found.")
+            return current
         raise RuntimeError("No batches were available to infer.")
     completed_before = completed_batch_count(memory, language, len(batches), plan_key)
     if completed_before >= len(batches) and current:
         return current
-    write_progress_only(flow_path, flow, language, completed_before, len(batches), plan_key, "AI flow inference started.")
+    write_progress_only(flow_path, flow, language, completed_before, len(batches), plan_key, "AI flow inference started.", work_dir)
     for index, batch in enumerate(batches, start=1):
         if index <= completed_before:
             continue
-        write_progress_only(flow_path, flow, language, index - 1, len(batches), plan_key, f"AI batch {index} of {len(batches)} is reading code.")
+        write_progress_only(flow_path, flow, language, index - 1, len(batches), plan_key, f"AI batch {index} of {len(batches)} is reading code.", work_dir)
         prompt = build_batch_prompt(flow, root, language, batch, max_files, index)
         save_prompt(work_dir, f"prompt-batch-{index:03}.md", prompt)
         batch_result = run_ai(command, prompt, timeout)
         batch_result["componentNames"] = [item["name"] for item in batch]
         save_batch(work_dir, index, batch_result)
         print(f"AI flow batch {index}: {len(batch)} components")
-        write_progress_only(flow_path, flow, language, index - 1, len(batches), plan_key, f"AI batch {index} of {len(batches)} is merging into the flowchart.")
+        write_progress_only(flow_path, flow, language, index - 1, len(batches), plan_key, f"AI batch {index} of {len(batches)} is merging into the flowchart.", work_dir)
         prompt = build_merge_prompt(flow, language, current, batch_result)
         save_prompt(work_dir, f"prompt-merge-{index:03}.md", prompt)
         try:
@@ -408,17 +426,19 @@ def main() -> int:
     flow_path = (root / args.flow_path).resolve()
     flow = read_json(flow_path)
     flow["flowLanguage"] = args.language
+    memory = load_memory(flow_path)
     components = attach_component_files(
         flow,
         selected_components(flow, args.max_components),
         root,
         args.max_files_per_component,
     )
+    components = select_gap_components(root, components, memory)
     batch_size = max(1, args.batch_size)
     total_batches = len(chunked(components, batch_size))
     unit_mode = f"fixedFiles={args.max_files_per_component}" if args.max_files_per_component > 0 else f"autoMapChars={TARGET_UNIT_MAP_CHARS}"
-    plan_key = f"repo-map-v2:{unit_mode}:batch={batch_size}:units={len(components)}"
-    work_dir = (root / args.work_dir).resolve()
+    plan_key = f"repo-map-v4-orchestrators:{unit_mode}:batch={batch_size}:units={len(components)}"
+    work_dir = (root / args.work_dir / clean_id(plan_key, "plan")).resolve()
     lock_path = acquire_lock(work_dir)
     try:
         raw = infer_and_merge_sequentially(

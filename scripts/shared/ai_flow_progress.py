@@ -25,8 +25,8 @@ def progress(status: str, language: str, completed: int, total: int, plan_key: s
     return payload
 
 
-def latest_successful_merge(flow_path: Path) -> tuple[int, Path | None]:
-    work_dir = flow_path.with_name("code-flow-work")
+def latest_successful_merge(flow_path: Path, max_index: int | None = None, work_dir: Path | None = None) -> tuple[int, Path | None]:
+    work_dir = work_dir or flow_path.with_name("code-flow-work")
     latest_index = 0
     latest_path = None
     for path in sorted(work_dir.glob("merge-*.json")):
@@ -34,14 +34,16 @@ def latest_successful_merge(flow_path: Path) -> tuple[int, Path | None]:
             index = int(path.stem.split("-")[-1])
         except ValueError:
             continue
+        if max_index is not None and index > max_index:
+            continue
         if index > latest_index:
             latest_index = index
             latest_path = path
     return latest_index, latest_path
 
 
-def flow_from_latest_merge(flow_path: Path, base_flow: dict, language: str, completed: int, total: int, plan_key: str) -> dict:
-    latest_index, merge_path = latest_successful_merge(flow_path)
+def flow_from_latest_merge(flow_path: Path, base_flow: dict, language: str, completed: int, total: int, plan_key: str, work_dir: Path | None = None) -> dict:
+    latest_index, merge_path = latest_successful_merge(flow_path, total, work_dir)
     if merge_path:
         try:
             partial = dict(base_flow)

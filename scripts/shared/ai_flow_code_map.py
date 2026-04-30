@@ -12,6 +12,9 @@ ROUTE_RE = re.compile(r"\b(?:app|router|server)\.(get|post|put|patch|delete|use)
 SQL_RE = re.compile(r"\b(SELECT|INSERT|UPDATE|DELETE|CREATE\s+TABLE|ALTER\s+TABLE)\b", re.IGNORECASE)
 DB_RE = re.compile(r"\b(db|database|pool|query|transaction|sqlite|postgres|mysql)\b", re.IGNORECASE)
 EVENT_RE = re.compile(r"\b(on|emit|dispatch|addEventListener|queue|schedule|cron|heartbeat|worker|job)\b", re.IGNORECASE)
+STAGE_IMPORT_RE = re.compile(r"require\(\s*['\"](\./(?:stages?/)?(?:\d+[a-z]?[-_][^'\"]+))['\"]\s*\)")
+NUMBERED_STAGE_PATH_RE = re.compile(r"(?:^|/)(\d+[a-z]?[-_][^/]+)\.[A-Za-z0-9]+$")
+ORCHESTRATOR_PATH_RE = re.compile(r"(?:^|/)orchestrators/([^/]+)")
 
 
 def build_component_context(root: Path, components: list[dict], max_files_per_component: int, _max_chars: int) -> str:
@@ -49,12 +52,17 @@ def map_file(root: Path, rel_path: str) -> dict:
     routes = [{"method": method.upper(), "path": route} for method, route in ROUTE_RE.findall(text)[:8]]
     sql_ops = sorted({match.group(1).upper() for match in SQL_RE.finditer(text)})[:6]
     imports = IMPORT_RE.findall(text)[:10]
+    exports = EXPORT_RE.findall(text)[:8]
+    stages = extract_stage_hints(text, rel_path, imports)
+    orchestrators = extract_orchestrator_hints(rel_path, symbols, exports)
     return {
         "path": rel_path,
         "symbols": symbols[:12],
-        "exports": EXPORT_RE.findall(text)[:8],
+        "exports": exports,
         "routes": routes,
         "imports": imports,
+        "stages": stages,
+        "orchestrators": orchestrators,
         "signals": signals(text, sql_ops),
     }
 
@@ -85,6 +93,49 @@ def signals(text: str, sql_ops: list[str]) -> list[str]:
     return found[:6]
 
 
+def extract_stage_hints(text: str, rel_path: str, imports: list[str]) -> list[str]:
+    hints = []
+    stage_imports = STAGE_IMPORT_RE.findall(text)
+    for item in stage_imports:
+        hints.append(clean_stage_name(item))
+    path_match = NUMBERED_STAGE_PATH_RE.search(rel_path.replace("\\", "/"))
+    if path_match:
+        hints.append(clean_stage_name(path_match.group(1)))
+    if "buildGrowthLoopStages" in text or "buildStages" in text:
+        for item in imports:
+            if re.search(r"(?:^|/)\d+[a-z]?[-_]", item):
+                hints.append(clean_stage_name(item))
+    return unique_ordered([item for item in hints if item])[:16]
+
+
+def clean_stage_name(value: str) -> str:
+    name = value.replace("\\", "/").split("/")[-1]
+    name = re.sub(r"\.[A-Za-z0-9]+$", "", name)
+    return name.replace("_", "-")
+
+
+def unique_ordered(values: list[str]) -> list[str]:
+    seen = set()
+    result = []
+    for value in values:
+        if value in seen:
+            continue
+        seen.add(value)
+        result.append(value)
+    return result
+
+
+def extract_orchestrator_hints(rel_path: str, symbols: list[str], exports: list[str]) -> list[str]:
+    hints = []
+    match = ORCHESTRATOR_PATH_RE.search(rel_path.replace("\\", "/"))
+    if match:
+        hints.append(match.group(1))
+    for name in [*symbols, *exports]:
+        if "orchestrator" in name.lower():
+            hints.append(name)
+    return unique_ordered(hints)[:8]
+
+
 def format_file_map(item: dict) -> str:
     if item.get("unreadable"):
         return f"- {item['path']}: unreadable"
@@ -93,6 +144,8 @@ def format_file_map(item: dict) -> str:
     append_list(lines, "exports", item.get("exports", []))
     append_routes(lines, item.get("routes", []))
     append_list(lines, "imports", item.get("imports", []))
+    append_list(lines, "orchestrators", item.get("orchestrators", []))
+    append_list(lines, "ordered stages", item.get("stages", []))
     append_list(lines, "signals", item.get("signals", []))
     return "\n".join(lines)
 

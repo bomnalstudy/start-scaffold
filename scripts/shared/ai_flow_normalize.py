@@ -71,12 +71,12 @@ def apply_flow_patch(current: dict | None, patch: dict) -> dict:
     flow = flows[0]
     node_ids = {node["id"] for node in flow["nodes"]}
     edge_keys = {(edge["from"], edge["to"], edge.get("label", "")) for edge in flow["edges"]}
-    for node in patch.get("addNodes", [])[:8]:
+    for node in patch.get("addNodes", [])[:1000]:
         normalized_node = normalize_nodes({"nodes": [node]})
         if normalized_node and normalized_node[0]["id"] not in node_ids:
             flow["nodes"].append(normalized_node[0])
             node_ids.add(normalized_node[0]["id"])
-    for edge in patch.get("addEdges", [])[:12]:
+    for edge in patch.get("addEdges", [])[:1000]:
         normalized = normalize_edges({"edges": [edge]}, node_ids)
         if normalized:
             item = normalized[0]
@@ -106,7 +106,7 @@ def patch_to_flow(patch: dict) -> dict:
 def normalize_nodes(item: dict) -> list[dict]:
     nodes = []
     seen = set()
-    for node_index, node in enumerate(item.get("nodes", [])[:20]):
+    for node_index, node in enumerate(item.get("nodes", [])[:1000]):
         node_id = clean_id(str(node.get("id") or node.get("label") or ""), f"node-{node_index}")
         if node_id in seen:
             node_id = f"{node_id}-{node_index}"
@@ -132,7 +132,7 @@ def normalize_nodes(item: dict) -> list[dict]:
 
 def normalize_edges(item: dict, node_ids: set[str]) -> list[dict]:
     edges = []
-    for edge in item.get("edges", [])[:28]:
+    for edge in item.get("edges", [])[:1000]:
         source = clean_id(str(edge.get("from", "")), "")
         target = clean_id(str(edge.get("to", "")), "")
         if source in node_ids and target in node_ids:

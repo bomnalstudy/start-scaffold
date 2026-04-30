@@ -7,7 +7,8 @@ type TextKey =
   | "flow" | "details" | "generated" | "filesScanned" | "components" | "references"
   | "summary" | "files" | "localRefs" | "incoming" | "outgoing" | "live" | "loading" | "error"
   | "workspace" | "map" | "favorites" | "pureChaos" | "responsibilities" | "relationships"
-  | "terms" | "evidence" | "workflow" | "progress";
+  | "terms" | "evidence" | "workflow" | "progress" | "connectedFlow" | "previousSteps"
+  | "nextSteps" | "noConnectedSteps";
 
 const ko = {
   title: "\ucf54\ub4dc \ud50c\ub85c\uc6b0 \ub9f5",
@@ -41,6 +42,10 @@ const ko = {
   evidence: "\uadfc\uac70",
   workflow: "\uc791\ub3d9 \ud750\ub984",
   progress: "\ubd84\uc11d \uc9c4\ud589",
+  connectedFlow: "\uc5f0\uacb0\ub41c \ud750\ub984",
+  previousSteps: "\uc774\uc804 \ub2e8\uacc4",
+  nextSteps: "\ub2e4\uc74c \ub2e8\uacc4",
+  noConnectedSteps: "\uc544\uc9c1 \uc5f0\uacb0\ub41c \uc774\uc804/\ub2e4\uc74c \ub2e8\uacc4\uac00 \uc5c6\uc2b5\ub2c8\ub2e4.",
   roleNames: {
     automation: "\uc2e4\ud589 \uc2a4\ud06c\ub9bd\ud2b8",
     backend: "\ubc31\uc5d4\ub4dc",
@@ -92,6 +97,10 @@ const en = {
   evidence: "Evidence",
   workflow: "Workflow",
   progress: "Progress",
+  connectedFlow: "Connected flow",
+  previousSteps: "Previous steps",
+  nextSteps: "Next steps",
+  noConnectedSteps: "No previous or next steps are connected yet.",
   roleNames: {
     automation: "run scripts",
     backend: "backend",
