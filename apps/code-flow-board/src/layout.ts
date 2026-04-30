@@ -4,6 +4,7 @@ import type { BoardEdge, BoardNode, CodeFlowData, InferredFlow, InferredFlowNode
 const elk = new ELK();
 const nodeWidth = 250;
 const nodeHeight = 88;
+const nodeExtraHeight = 18;
 const supportingRoles = new Set<Role>(["docs", "skill"]);
 
 function fallbackFlow(data: CodeFlowData): InferredFlow {
@@ -97,12 +98,16 @@ export async function layoutFlow(data: CodeFlowData, query: string, role: string
     layoutOptions: {
       "elk.algorithm": "layered",
       "elk.direction": "DOWN",
-      "elk.spacing.nodeNode": "90",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "110",
+      "elk.spacing.nodeNode": "150",
+      "elk.spacing.edgeNode": "52",
+      "elk.spacing.edgeEdge": "36",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "190",
+      "elk.layered.spacing.edgeNodeBetweenLayers": "70",
+      "elk.layered.spacing.edgeEdgeBetweenLayers": "44",
       "elk.edgeRouting": "ORTHOGONAL",
       "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
     },
-    children: boardNodes.map((node) => ({ id: node.id, width: node.width, height: node.height })),
+    children: boardNodes.map((node) => ({ id: node.id, width: node.width, height: node.height + nodeExtraHeight })),
     edges: flowEdges.map((edge, index) => ({
       id: `${edge.from}->${edge.to}:${index}`,
       sources: [edge.from],
@@ -127,9 +132,14 @@ export async function layoutFlow(data: CodeFlowData, query: string, role: string
       to: edge.targets[0],
       label: original?.label,
       role: nodeMap.get(edge.targets[0])?.role ?? "project",
-      points: edge.sections?.[0]?.bendPoints ?? [],
+      points: pointsForSection(edge.sections?.[0]),
     };
   });
 
   return { nodes: [...nodeMap.values()], edges: boardEdges, flow };
+}
+
+function pointsForSection(section: { startPoint?: { x: number; y: number }; bendPoints?: Array<{ x: number; y: number }>; endPoint?: { x: number; y: number } } | undefined) {
+  if (!section?.startPoint || !section.endPoint) return [];
+  return [section.startPoint, ...(section.bendPoints ?? []), section.endPoint];
 }

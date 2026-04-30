@@ -100,6 +100,8 @@ Users need to keep the flowchart open while vibe-coding. A static HTML file requ
 - Scoped latest-merge selection to the active batch count so a new gap-only run does not get overwritten by an older full-run `merge-019.json`.
 - Isolated AI flow work files by plan key so gap-only reanalysis never reuses stale merge files from an older full-run plan.
 - Made the static analyzer add its generated output directory to the target project's `.gitignore` so flowchart artifacts stay out of commits.
+- Improved canvas zoom behavior so Alt+wheel zooms around the current mouse pointer, supports up to 500%, and keeps SVG node size independent from graph node count.
+- Increased flow layout spacing and switched edge rendering to ELK's routed orthogonal points so connectors keep more distance from node shapes.
 
 ## Remaining Risk
 

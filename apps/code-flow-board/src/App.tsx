@@ -110,7 +110,13 @@ function App() {
         >
           {(error || layoutError) && <p className="error">{error || layoutError}</p>}
           <div className="canvasContent" style={canvas.canvasVars}>
-            <svg viewBox={`${graphBounds.minX} ${graphBounds.minY} ${graphBounds.width} ${graphBounds.height}`} role="img" aria-label="Code flow graph">
+            <svg
+              width={graphBounds.width}
+              height={graphBounds.height}
+              viewBox={`${graphBounds.minX} ${graphBounds.minY} ${graphBounds.width} ${graphBounds.height}`}
+              role="img"
+              aria-label="Code flow graph"
+            >
               <defs>
                 <marker id="arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
                   <path d="M 0 0 L 8 4 L 0 8 z" />

@@ -1,5 +1,9 @@
 import { useEffect, useState, type PointerEvent, type WheelEvent } from "react";
 
+const MIN_SCALE = 0.35;
+const MAX_SCALE = 5;
+const WHEEL_ZOOM_STEP = 0.0018;
+
 export type CanvasVars = React.CSSProperties & {
   "--pan-x": string;
   "--pan-y": string;
@@ -32,14 +36,35 @@ export function useCanvasView() {
     };
   }, []);
 
+  function clampScale(value: number) {
+    return Math.min(MAX_SCALE, Math.max(MIN_SCALE, value));
+  }
+
   function zoom(delta: number) {
-    setView((current) => ({ ...current, scale: Math.min(2.2, Math.max(0.35, current.scale + delta)) }));
+    setView((current) => ({ ...current, scale: clampScale(current.scale + delta) }));
+  }
+
+  function zoomAt(clientX: number, clientY: number, rect: DOMRect, nextScale: number) {
+    setView((current) => {
+      const scale = clampScale(nextScale);
+      if (scale === current.scale) return current;
+      const pointerX = clientX - rect.left;
+      const pointerY = clientY - rect.top;
+      const worldX = (pointerX - current.x) / current.scale;
+      const worldY = (pointerY - current.y) / current.scale;
+      return {
+        x: pointerX - worldX * scale,
+        y: pointerY - worldY * scale,
+        scale,
+      };
+    });
   }
 
   function wheel(event: WheelEvent<HTMLDivElement>) {
     if (!event.altKey) return;
     event.preventDefault();
-    zoom(event.deltaY > 0 ? -0.08 : 0.08);
+    const factor = Math.exp(-event.deltaY * WHEEL_ZOOM_STEP);
+    zoomAt(event.clientX, event.clientY, event.currentTarget.getBoundingClientRect(), view.scale * factor);
   }
 
   function pointerDown(event: PointerEvent<HTMLDivElement>) {
