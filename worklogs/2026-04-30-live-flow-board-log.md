@@ -104,6 +104,7 @@ Users need to keep the flowchart open while vibe-coding. A static HTML file requ
 - Increased flow layout spacing and switched edge rendering to ELK's routed orthogonal points so connectors keep more distance from node shapes.
 - Added sequence badges for numbered stage nodes and parent sequence nodes so users can visually recognize ordered orchestrator flows.
 - Moved sequence badges outside the node body and reserved layout space for them so stage labels do not overlap node text.
+- Added layout caching, search debounce, and stale layout-request rejection so the board does not repeat expensive ELK work during typing, filtering, and live updates.
 
 ## Remaining Risk
 

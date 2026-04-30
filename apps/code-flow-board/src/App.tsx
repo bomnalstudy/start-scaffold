@@ -6,6 +6,7 @@ import { shapePath } from "./nodeShape";
 import type { BoardNode, Role } from "./types";
 import { useCanvasView } from "./useCanvasView";
 import { useCodeFlow } from "./useCodeFlow";
+import { useDebouncedValue } from "./useDebouncedValue";
 import { useGraphBounds } from "./useGraphBounds";
 import { useNodeDrag } from "./useNodeDrag";
 
@@ -30,14 +31,22 @@ function App() {
   const { data, error } = useCodeFlow(t("error"), language);
   const canvas = useCanvasView();
   const nodeDrag = useNodeDrag(setLayout, setSelected);
+  const debouncedQuery = useDebouncedValue(query);
 
   useEffect(() => {
     if (!data) return;
-    layoutFlow(data, query, role).then((nextLayout) => {
+    let cancelled = false;
+    layoutFlow(data, debouncedQuery, role).then((nextLayout) => {
+      if (cancelled) return;
       setLayout(nextLayout);
       setLayoutError("");
-    }).catch(() => setLayoutError(t("error")));
-  }, [data, query, role, t]);
+    }).catch(() => {
+      if (!cancelled) setLayoutError(t("error"));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [data, debouncedQuery, role, t]);
 
   useEffect(() => {
     localStorage.setItem("codeFlowLang", language);

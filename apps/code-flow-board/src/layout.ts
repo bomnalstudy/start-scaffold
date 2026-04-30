@@ -7,6 +7,10 @@ const nodeHeight = 88;
 const nodeExtraHeight = 18;
 const sequenceBadgeHeight = 28;
 const supportingRoles = new Set<Role>(["docs", "skill"]);
+type LayoutState = { nodes: BoardNode[]; edges: BoardEdge[]; flow: InferredFlow };
+
+const layoutCache = new Map<string, LayoutState>();
+const maxCachedLayouts = 12;
 
 function fallbackFlow(data: CodeFlowData): InferredFlow {
   return {
@@ -75,11 +79,12 @@ function toBoardNode(data: CodeFlowData, node: InferredFlowNode): BoardNode {
 function sequenceForNode(node: InferredFlowNode, files: string[]): BoardNode["sequence"] {
   const text = [node.label, node.summary ?? "", ...files].join(" ");
   const step = text.match(/\b(0?\d{1,2}b?)\b/)?.[1];
-  if (step && (text.includes("/stages/") || /단계|stage/i.test(text))) {
+  const hasStageText = text.includes("/stages/") || /\uB2E8\uACC4|stage/i.test(text);
+  if (step && hasStageText) {
     return { kind: "step", step: step.padStart(step.includes("b") ? 3 : 2, "0") };
   }
-  const total = text.match(/(\d+)\s*단계/)?.[1];
-  if (total && /순차|단계 실행|stage/i.test(text)) {
+  const total = text.match(/(\d+)\s*\uB2E8\uACC4/)?.[1];
+  if (total && /\uC21C\uCC28|\uB2E8\uACC4 \uC2E4\uD589|stage/i.test(text)) {
     return { kind: "sequence", total: Number(total) };
   }
   return undefined;
@@ -101,6 +106,20 @@ function visibleEdge(edge: InferredFlow["edges"][number], nodeIds: Set<string>) 
 export async function layoutFlow(data: CodeFlowData, query: string, role: string) {
   const normalizedQuery = query.trim().toLowerCase();
   const flow = selectedFlow(data);
+  const cacheKey = layoutCacheKey(data, flow, normalizedQuery, role);
+  const cached = layoutCache.get(cacheKey);
+  if (cached) return cloneLayout(cached);
+
+  const nextLayout = await computeLayout(data, flow, normalizedQuery, role);
+  layoutCache.set(cacheKey, cloneLayout(nextLayout));
+  if (layoutCache.size > maxCachedLayouts) {
+    const oldestKey = layoutCache.keys().next().value;
+    if (oldestKey) layoutCache.delete(oldestKey);
+  }
+  return nextLayout;
+}
+
+async function computeLayout(data: CodeFlowData, flow: InferredFlow, normalizedQuery: string, role: string): Promise<LayoutState> {
   const boardNodes = flow.nodes
     .filter((node) => node.role === "project" || !supportingRoles.has(node.role))
     .map((node) => toBoardNode(data, node))
@@ -156,6 +175,45 @@ export async function layoutFlow(data: CodeFlowData, query: string, role: string
   });
 
   return { nodes: [...nodeMap.values()], edges: boardEdges, flow };
+}
+
+function layoutCacheKey(data: CodeFlowData, flow: InferredFlow, query: string, role: string) {
+  return [
+    data.root,
+    data.generatedAt,
+    data.flowGeneratedAt ?? "",
+    data.flowLanguage ?? "",
+    data.flowProgress?.visibleMergeBatch ?? "",
+    data.flowProgress?.updatedAt ?? "",
+    flow.id,
+    flow.nodes.length,
+    flow.edges.length,
+    query,
+    role,
+  ].join("|");
+}
+
+function cloneLayout(layout: LayoutState): LayoutState {
+  return {
+    flow: layout.flow,
+    nodes: layout.nodes.map((node) => ({
+      ...node,
+      sampleFiles: [...node.sampleFiles],
+      evidence: node.evidence ? [...node.evidence] : undefined,
+      description: node.description
+        ? {
+            ...node.description,
+            responsibilities: [...node.description.responsibilities],
+            relationships: [...node.description.relationships],
+            terms: node.description.terms ? [...node.description.terms] : undefined,
+          }
+        : undefined,
+    })),
+    edges: layout.edges.map((edge) => ({
+      ...edge,
+      points: edge.points.map((point) => ({ ...point })),
+    })),
+  };
 }
 
 function pointsForSection(section: { startPoint?: { x: number; y: number }; bendPoints?: Array<{ x: number; y: number }>; endPoint?: { x: number; y: number } } | undefined) {
