@@ -28,7 +28,7 @@ button, input, select { font: inherit; }
 .topActions { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; }
 .topActions select { height: 28px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
 .canvas { width: 100%; height: 100%; overflow: hidden; padding: 90px 80px 80px; touch-action: none; }
-.canvas.isPannable { cursor: grab; }
+.canvas.isPannable { cursor: grab; user-select: none; -webkit-user-select: none; }
 .canvas.isPannable:active { cursor: grabbing; }
 .canvasContent { width: max-content; transform: translate(var(--pan-x), var(--pan-y)) scale(var(--zoom)); transform-origin: 0 0; }
 svg { display: block; overflow: visible; }

@@ -1,6 +1,6 @@
 import { useEffect, useState, type PointerEvent, type WheelEvent } from "react";
 
-const MIN_SCALE = 0.35;
+const MIN_SCALE = 0.01;
 const MAX_SCALE = 5;
 const WHEEL_ZOOM_STEP = 0.0018;
 
@@ -69,17 +69,24 @@ export function useCanvasView() {
 
   function pointerDown(event: PointerEvent<HTMLDivElement>) {
     if (!spaceDown) return;
+    event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     setDragStart({ x: event.clientX, y: event.clientY, vx: view.x, vy: view.y });
   }
 
   function pointerMove(event: PointerEvent<HTMLDivElement>) {
     if (!dragStart) return;
+    event.preventDefault();
     setView((current) => ({
       ...current,
       x: dragStart.vx + event.clientX - dragStart.x,
       y: dragStart.vy + event.clientY - dragStart.y,
     }));
+  }
+
+  function stopPan() {
+    setDragStart(null);
+    window.getSelection()?.removeAllRanges();
   }
 
   return {
@@ -91,7 +98,8 @@ export function useCanvasView() {
     handlers: {
       onPointerDown: pointerDown,
       onPointerMove: pointerMove,
-      onPointerUp: () => setDragStart(null),
+      onPointerUp: stopPan,
+      onPointerCancel: stopPan,
       onWheel: wheel,
     },
   };
