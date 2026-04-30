@@ -41,6 +41,7 @@ export function useNodeDrag(
       return {
         ...current,
         nodes: current.nodes.map((item) => item.id === node.id ? { ...item, x: dragNode.nodeX + dx, y: dragNode.nodeY + dy } : item),
+        edges: current.edges.map((edge) => edge.from === node.id || edge.to === node.id ? { ...edge, points: [] } : edge),
       };
     });
   }
